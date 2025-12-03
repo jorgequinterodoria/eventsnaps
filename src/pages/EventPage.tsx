@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Play } from 'lucide-react'
+import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Play, Download, Square, CheckSquare, X } from 'lucide-react'
 import { cn, formatTimeRemaining, isEventExpired } from '@/lib/utils'
-import { getEventByCode, getEventPhotos, uploadPhoto } from '@/lib/database'
+import { getEventByCode, getEventPhotos, uploadPhoto, downloadPhotoBlob } from '@/lib/database'
+import JSZip from 'jszip'
 import { useEventRealtime } from '@/hooks/useEventRealtime'
 import { useStore } from '@/lib/store'
 import Carousel from '@/components/Carousel'
@@ -17,6 +18,10 @@ const EventPage = () =>{
   const [copied, setCopied] = useState(false)
   const [event, setEvent] = useState<EventType | null>(null)
   const [showCarousel, setShowCarousel] = useState(false)
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isDownloadingSelected, setIsDownloadingSelected] = useState(false)
 
   const loadEventData = useCallback(async () => {
     if (!code) return
@@ -64,6 +69,87 @@ const EventPage = () =>{
       alert('Failed to upload photo. Please try again.')
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  const downloadAllAsZip = async () => {
+    if (!event || photos.length === 0) return
+    setIsDownloadingZip(true)
+    try {
+      const zip = new JSZip()
+      for (const p of photos) {
+        const blob = await downloadPhotoBlob(p.storage_path)
+        const parts = p.storage_path.split('/')
+        const name = parts[parts.length - 1]
+        zip.file(name, blob)
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `evento_${event.code}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('No se pudo descargar el ZIP. Intenta nuevamente.')
+    } finally {
+      setIsDownloadingZip(false)
+    }
+  }
+
+  const toggleSelectMode = () => {
+    setSelectMode((v) => {
+      if (v) setSelectedIds(new Set())
+      return !v
+    })
+  }
+
+  const toggleSelectPhoto = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAll = () => {
+    setSelectedIds(new Set(photos.map((p) => p.id)))
+  }
+
+  const clearSelection = () => {
+    setSelectedIds(new Set())
+  }
+
+  const downloadSelectedZip = async () => {
+    if (!event || selectedIds.size === 0) return
+    setIsDownloadingSelected(true)
+    try {
+      const zip = new JSZip()
+      const ids = new Set(selectedIds)
+      for (const p of photos) {
+        if (ids.has(p.id)) {
+          const blob = await downloadPhotoBlob(p.storage_path)
+          const parts = p.storage_path.split('/')
+          const name = parts[parts.length - 1]
+          zip.file(name, blob)
+        }
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `evento_${event.code}_seleccion.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('No se pudo descargar el ZIP seleccionado. Intenta nuevamente.')
+    } finally {
+      setIsDownloadingSelected(false)
     }
   }
 
@@ -132,6 +218,49 @@ const EventPage = () =>{
                 >
                   <Play className="h-4 w-4 mr-1" /> Ver presentación
                 </button>
+              )}
+
+              {photos.length > 0 && (
+                <button
+                  onClick={downloadAllAsZip}
+                  disabled={isDownloadingZip}
+                  className="ml-2 flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4 mr-1" /> {isDownloadingZip ? 'Preparando...' : 'Descargar todo'}
+                </button>
+              )}
+
+              {photos.length > 0 && !selectMode && (
+                <button
+                  onClick={toggleSelectMode}
+                  className="ml-2 flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm"
+                >
+                  <Square className="h-4 w-4 mr-1" /> Seleccionar
+                </button>
+              )}
+
+              {photos.length > 0 && selectMode && (
+                <div className="ml-2 flex items-center space-x-2">
+                  <button
+                    onClick={downloadSelectedZip}
+                    disabled={selectedIds.size === 0 || isDownloadingSelected}
+                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm disabled:opacity-50"
+                  >
+                    <Download className="h-4 w-4 mr-1" /> {isDownloadingSelected ? 'Preparando...' : `Descargar seleccionadas (${selectedIds.size})`}
+                  </button>
+                  <button
+                    onClick={selectAll}
+                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm"
+                  >
+                    <CheckSquare className="h-4 w-4 mr-1" /> Seleccionar todo
+                  </button>
+                  <button
+                    onClick={() => { clearSelection(); setSelectMode(false) }}
+                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm"
+                  >
+                    <X className="h-4 w-4 mr-1" /> Cancelar
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -239,7 +368,13 @@ const EventPage = () =>{
         {photos.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {photos.map((photo) => (
-              <PhotoCard key={photo.id} photo={photo} />
+              <PhotoCard
+                key={photo.id}
+                photo={photo}
+                selectionEnabled={selectMode}
+                selected={selectedIds.has(photo.id)}
+                onToggleSelect={() => toggleSelectPhoto(photo.id)}
+              />
             ))}
           </div>
         )}
@@ -248,7 +383,7 @@ const EventPage = () =>{
   )
 }
 
-function PhotoCard({ photo }: { photo: Photo }) {
+function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { photo: Photo, selectionEnabled?: boolean, selected?: boolean, onToggleSelect?: () => void }) {
   const [imageUrl, setImageUrl] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
@@ -268,21 +403,61 @@ function PhotoCard({ photo }: { photo: Photo }) {
   }, [photo.storage_path])
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden group">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden group relative">
       {loading ? (
         <div className="aspect-square bg-gray-200 animate-pulse flex items-center justify-center">
           <Camera className="h-12 w-12 text-gray-400" />
         </div>
       ) : (
-        <img
-          src={imageUrl}
-          alt={photo.caption || 'Foto del evento'}
-          className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-200"
-        />
+        <button
+          type="button"
+          onClick={() => selectionEnabled && onToggleSelect ? onToggleSelect() : undefined}
+          className="w-full"
+        >
+          <img
+            src={imageUrl}
+            alt={photo.caption || 'Foto del evento'}
+            className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-200"
+          />
+        </button>
+      )}
+      {selectionEnabled && !loading && (
+        <div className="absolute top-2 right-2">
+          <span className={cn("inline-flex items-center px-2 py-1 rounded-md text-sm", selected ? "bg-blue-600 text-white" : "bg-white text-gray-700 border") }>
+            {selected ? <CheckSquare className="h-4 w-4 mr-1" /> : <Square className="h-4 w-4 mr-1" />}
+            {selected ? 'Seleccionada' : 'Seleccionar'}
+          </span>
+        </div>
       )}
       {photo.caption && (
         <div className="p-4">
           <p className="text-sm text-gray-600">{photo.caption}</p>
+        </div>
+      )}
+      {!loading && (
+        <div className="p-4 pt-0">
+          <button
+            onClick={async () => {
+              try {
+                const blob = await downloadPhotoBlob(photo.storage_path)
+                const url = URL.createObjectURL(blob)
+                const parts = photo.storage_path.split('/')
+                const name = parts[parts.length - 1]
+                const a = document.createElement('a')
+                a.href = url
+                a.download = name
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+              } catch {
+                alert('No se pudo descargar la foto. Intenta nuevamente.')
+              }
+            }}
+            className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm"
+          >
+            <Download className="h-4 w-4 mr-1" /> Descargar
+          </button>
         </div>
       )}
     </div>

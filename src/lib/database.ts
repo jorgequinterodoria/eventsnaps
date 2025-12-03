@@ -158,3 +158,11 @@ export async function getPhotoUrl(storagePath: string): Promise<string> {
   
   return data.publicUrl
 }
+
+export async function downloadPhotoBlob(storagePath: string): Promise<Blob> {
+  const { data, error } = await supabase.storage
+    .from('photos')
+    .download(storagePath)
+  if (error) throw error
+  return data
+}
