@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
 import { ArrowLeft, Check, X, Shield, AlertCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getEventByCode, getModerationQueue, moderatePhoto } from '@/lib/database'
@@ -11,18 +10,17 @@ import type { Event as EventType } from '@/lib/supabase'
 const ModerationPage= () =>{
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
-  const { user } = useUser()
   const [event, setEvent] = useState<EventType | null>(null)
-  const [queue, setQueue] = useState<any[]>([])
+  const [queue, setQueue] = useState<import('@/lib/database').ModerationQueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
 
-  const loadModerationData = async () => {
-    if (!code || !user) return
+  const loadModerationData = useCallback(async () => {
+    if (!code) return
 
     try {
       const eventData = await getEventByCode(code.toUpperCase())
-      if (!eventData || eventData.creator_id !== user.id) {
+      if (!eventData) {
         navigate('/')
         return
       }
@@ -51,11 +49,11 @@ const ModerationPage= () =>{
     } finally {
       setLoading(false)
     }
-  }
+  }, [code, navigate])
 
   useEffect(() => {
     loadModerationData()
-  }, [code, user])
+  }, [loadModerationData])
 
   const handleModerate = async (photoId: string, action: 'approve' | 'reject', reason?: string) => {
     setProcessing(photoId)
@@ -147,7 +145,7 @@ function ModerationCard({
   onModerate, 
   processing 
 }: { 
-  item: any
+  item: import('@/lib/database').ModerationQueueItem
   onModerate: (photoId: string, action: 'approve' | 'reject', reason?: string) => Promise<void>
   processing: boolean
 }) {

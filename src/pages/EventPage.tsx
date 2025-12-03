@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
 import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Play } from 'lucide-react'
 import { cn, formatTimeRemaining, isEventExpired } from '@/lib/utils'
 import { getEventByCode, getEventPhotos, uploadPhoto } from '@/lib/database'
@@ -11,8 +10,7 @@ import type { Event as EventType, Photo } from '@/lib/supabase'
 const EventPage = () =>{
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
-  const { user } = useUser()
-  const { currentEvent, photos, setCurrentEvent, setPhotos, setLoading, setError, addPhoto } = useStore()
+  const { photos, setCurrentEvent, setPhotos, setLoading, setError, addPhoto } = useStore()
   
   const [isUploading, setIsUploading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -54,7 +52,7 @@ const EventPage = () =>{
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         if (file.type.startsWith('image/')) {
-          const photo = await uploadPhoto(event.id, file, undefined, user?.id ?? 'anonymous')
+          const photo = await uploadPhoto(event.id, file)
           addPhoto(photo)
         }
       }

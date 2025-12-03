@@ -2,7 +2,17 @@ import { supabase } from './supabase'
 import { generateEventCode } from './utils'
 import type { Event, Photo } from './supabase'
 
-export async function createEvent(duration: '24h' | '72h', moderationEnabled: boolean = false, creatorId: string) {
+export interface ModerationQueueItem {
+  id: string
+  photo_id: string
+  processed: boolean
+  queued_at: string
+  photos: Photo
+  gemini_suggestion?: 'approve' | 'reject'
+  confidence_score?: number
+}
+
+export async function createEvent(duration: '24h' | '72h', moderationEnabled: boolean = false, creatorId: string = 'anonymous') {
   const code = generateEventCode()
   const expiresAt = new Date()
   
@@ -50,7 +60,8 @@ export async function getEventPhotos(eventId: string): Promise<Photo[]> {
   return data || []
 }
 
-export async function uploadPhoto(eventId: string, file: File, caption: string | undefined, uploaderId: string) {
+export async function uploadPhoto(eventId: string, file: File, caption?: string, uploaderId?: string) {
+  uploaderId = uploaderId || 'anonymous'
   const fileName = `${Date.now()}-${file.name}`
   const filePath = `events/${eventId}/${fileName}`
 
@@ -95,7 +106,7 @@ export async function uploadPhoto(eventId: string, file: File, caption: string |
   return photo
 }
 
-export async function getModerationQueue(eventId: string): Promise<any[]> {
+export async function getModerationQueue(eventId: string): Promise<ModerationQueueItem[]> {
   const { data, error } = await supabase
     .from('moderation_queues')
     .select(`
@@ -107,11 +118,11 @@ export async function getModerationQueue(eventId: string): Promise<any[]> {
     .order('queued_at', { ascending: true })
 
   if (error) throw error
-  return data || []
+  return (data as ModerationQueueItem[]) || []
 }
 
 export async function moderatePhoto(photoId: string, action: 'approve' | 'reject', reason?: string) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const moderatorId = 'anonymous'
   
   // Update photo status
   const { error: photoError } = await supabase
@@ -132,7 +143,7 @@ export async function moderatePhoto(photoId: string, action: 'approve' | 'reject
     .from('moderation_actions')
     .insert({
       photo_id: photoId,
-      moderator_id: user?.id || 'anonymous',
+      moderator_id: moderatorId,
       action,
       reason: reason || null
     })

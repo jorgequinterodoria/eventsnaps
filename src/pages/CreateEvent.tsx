@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
 import { Clock, Shield, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createEvent } from '@/lib/database'
 import QRCode from '@/components/QRCode'
 
 const CreateEvent = () =>{
-  const { user } = useUser()
   const navigate = useNavigate()
   const [duration, setDuration] = useState<'24h' | '72h'>('24h')
   const [moderationEnabled, setModerationEnabled] = useState(false)
@@ -16,11 +14,9 @@ const CreateEvent = () =>{
   const [createdCode, setCreatedCode] = useState<string>('')
 
   const handleCreateEvent = async () => {
-    if (!user) return
-    
     setIsCreating(true)
     try {
-      const event = await createEvent(duration, moderationEnabled, user.id)
+      const event = await createEvent(duration, moderationEnabled)
       setCreatedCode(event.code)
       setShowQR(true)
     } catch (error) {

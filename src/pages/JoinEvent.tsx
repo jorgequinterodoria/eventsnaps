@@ -24,7 +24,7 @@ const JoinEvent = () =>{
       } else {
         setError('Evento no encontrado o expirado. Verifica el código e intenta nuevamente.')
       }
-    } catch (err) {
+    } catch {
       setError('No se pudo unirse al evento. Intenta nuevamente.')
     } finally {
       setIsLoading(false)

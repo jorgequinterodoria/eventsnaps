@@ -1,6 +1,6 @@
 # EventSnaps
 
-Aplicación para compartir fotos de eventos con código de acceso de 6 caracteres, subida en tiempo real, galería y modo carrusel, autenticación con Clerk y almacenamiento en Supabase.
+Aplicación para compartir fotos de eventos con código de acceso de 6 caracteres, subida en tiempo real, galería y modo carrusel y almacenamiento en Supabase. Acceso abierto sin autenticación.
 
 ## Características
 - Creación de eventos con duración 24h/72h y código único de 6 caracteres
@@ -13,14 +13,14 @@ Aplicación para compartir fotos de eventos con código de acceso de 6 caractere
 ## Stack
 - Frontend: React 18 + TypeScript + Vite
 - UI: Tailwind CSS, Lucide Icons
-- Auth: Clerk (sesiones de usuario)
+- Acceso abierto (sin login)
 - Backend-as-a-Service: Supabase (PostgreSQL + Storage)
 - IA opcional: Google Gemini (pendiente de integración vía función de servidor)
 
 ## Requisitos
 - Node.js 18+
 - pnpm (recomendado)
-- Cuenta de Supabase y Clerk
+- Cuenta de Supabase
 
 ## Variables de entorno
 Crear `.env.local` en la raíz del proyecto con:
@@ -28,7 +28,6 @@ Crear `.env.local` en la raíz del proyecto con:
 ```
 VITE_SUPABASE_URL=https://<your-project>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
-VITE_CLERK_PUBLISHABLE_KEY=<clerk-publishable-key>
 GEMINI_API_KEY=<gemini-key>
 ```
 
@@ -48,7 +47,7 @@ Si necesitas recrear el esquema, revisa los archivos en `supabase/migrations/` y
 - `/create` Crear evento
 - `/join` Unirse a evento
 - `/event/:code` Página del evento (galería, subida y carrusel)
-- `/moderate/:code` Moderación (requiere sesión del creador; la base está preparada)
+- `/moderate/:code` Moderación abierta (panel de revisión)
 
 ## Carrusel de fotos
 - Botón “Ver presentación” disponible cuando el evento tiene fotos
