@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Play } from 'lucide-react'
 import { cn, formatTimeRemaining, isEventExpired } from '@/lib/utils'
 import { getEventByCode, getEventPhotos, uploadPhoto } from '@/lib/database'
+import { useEventRealtime } from '@/hooks/useEventRealtime'
 import { useStore } from '@/lib/store'
 import Carousel from '@/components/Carousel'
 import type { Event as EventType, Photo } from '@/lib/supabase'
@@ -43,6 +44,8 @@ const EventPage = () =>{
   useEffect(() => {
     loadEventData()
   }, [loadEventData])
+
+  useEventRealtime(event?.id, () => photos, addPhoto, setPhotos)
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0 || !event) return
