@@ -4,6 +4,7 @@ import { useUser } from '@clerk/clerk-react'
 import { Clock, Shield, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createEvent } from '@/lib/database'
+import QRCode from '@/components/QRCode'
 
 const CreateEvent = () =>{
   const { user } = useUser()
@@ -11,6 +12,8 @@ const CreateEvent = () =>{
   const [duration, setDuration] = useState<'24h' | '72h'>('24h')
   const [moderationEnabled, setModerationEnabled] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+  const [createdCode, setCreatedCode] = useState<string>('')
 
   const handleCreateEvent = async () => {
     if (!user) return
@@ -18,7 +21,8 @@ const CreateEvent = () =>{
     setIsCreating(true)
     try {
       const event = await createEvent(duration, moderationEnabled, user.id)
-      navigate(`/event/${event.code}`)
+      setCreatedCode(event.code)
+      setShowQR(true)
     } catch (error) {
       console.error('Error al crear el evento:', error)
       alert('No se pudo crear el evento. Intenta nuevamente.')
@@ -140,6 +144,42 @@ const CreateEvent = () =>{
             Volver al inicio
           </button>
         </div>
+
+        {showQR && (
+          <div className="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg sm:px-10">
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Comparte este código QR</h3>
+              <p className="mt-1 text-sm text-gray-600">Escanéalo para abrir el evento</p>
+            </div>
+            <div className="flex items-center justify-center">
+              <QRCode url={`https://tusfotosevento.netlify.app/event/${createdCode}`} size={256} caption={`Código: ${createdCode}`} />
+            </div>
+            <div className="mt-3 text-center">
+              <a
+                href={`https://tusfotosevento.netlify.app/event/${createdCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-500"
+              >
+                https://tusfotosevento.netlify.app/event/{createdCode}
+              </a>
+            </div>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                onClick={() => navigate(`/event/${createdCode}`)}
+                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Ir al evento
+              </button>
+              <button
+                onClick={() => setShowQR(false)}
+                className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
