@@ -4,6 +4,7 @@ import { Clock, Shield, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createEvent } from '@/lib/database'
 import QRCode from '@/components/QRCode'
+import Footer from '@/components/Footer'
 
 const CreateEvent = () =>{
   const navigate = useNavigate()
@@ -177,6 +178,7 @@ const CreateEvent = () =>{
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

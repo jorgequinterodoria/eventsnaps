@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, Users, Clock, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Footer from '@/components/Footer'
 
 const Home = () => {
   const navigate = useNavigate()
@@ -95,7 +96,6 @@ const Home = () => {
           </div>
         </div>
       </div>
-
       {/* Action Section */}
       <div className="bg-white py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -172,6 +172,7 @@ const Home = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

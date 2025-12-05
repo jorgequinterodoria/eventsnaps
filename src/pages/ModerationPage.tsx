@@ -6,6 +6,7 @@ import { getEventByCode, getModerationQueue, moderatePhoto } from '@/lib/databas
 import { analyzePhotoForModeration } from '@/lib/gemini'
 import { getPhotoUrl } from '@/lib/database'
 import type { Event as EventType } from '@/lib/supabase'
+import Footer from '@/components/Footer'
 
 const ModerationPage= () =>{
   const { code } = useParams<{ code: string }>()
@@ -62,7 +63,7 @@ const ModerationPage= () =>{
       setQueue(queue.filter(item => item.photo_id !== photoId))
     } catch (error) {
       console.error('Failed to moderate photo:', error)
-      alert('Failed to moderate photo. Please try again.')
+      alert('Error al moderar la foto. Inténtalo de nuevo.')
     } finally {
       setProcessing(null)
     }
@@ -73,7 +74,7 @@ const ModerationPage= () =>{
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading moderation queue...</p>
+          <p className="mt-4 text-gray-600">Cargando cola de moderación...</p>
         </div>
       </div>
     )
@@ -84,7 +85,7 @@ const ModerationPage= () =>{
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">Event not found or you don't have permission to moderate.</p>
+          <p className="text-gray-600">Evento no encontrado o no tienes permisos para moderar.</p>
         </div>
       </div>
     )
@@ -101,16 +102,16 @@ const ModerationPage= () =>{
               className="flex items-center text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Event
+              Volver al evento
             </button>
             
             <div className="flex items-center">
               <Shield className="h-5 w-5 text-blue-600 mr-2" />
-              <h1 className="text-xl font-semibold text-gray-900">Moderation Panel</h1>
+              <h1 className="text-xl font-semibold text-gray-900">Panel de Moderación</h1>
             </div>
             
             <div className="text-sm text-gray-600">
-              {queue.length} pending {queue.length === 1 ? 'photo' : 'photos'}
+              {queue.length} {queue.length === 1 ? 'foto pendiente' : 'fotos pendientes'}
             </div>
           </div>
         </div>
@@ -120,8 +121,8 @@ const ModerationPage= () =>{
         {queue.length === 0 ? (
           <div className="text-center py-12">
             <Shield className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">All Clear!</h2>
-            <p className="text-gray-600">No photos pending moderation. Great job!</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Todo en orden!</h2>
+            <p className="text-gray-600">No hay fotos pendientes de moderación. ¡Bien hecho!</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -136,6 +137,7 @@ const ModerationPage= () =>{
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

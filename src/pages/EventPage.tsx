@@ -8,6 +8,7 @@ import { useEventRealtime } from '@/hooks/useEventRealtime'
 import { useStore } from '@/lib/store'
 import Carousel from '@/components/Carousel'
 import type { Event as EventType, Photo } from '@/lib/supabase'
+import Footer from '@/components/Footer'
 
 const EventPage = () =>{
   const { code } = useParams<{ code: string }>()
@@ -460,6 +461,7 @@ function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { phot
           </button>
         </div>
       )}
+      <Footer />
     </div>
   )
 }

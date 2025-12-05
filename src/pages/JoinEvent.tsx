@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getEventByCode } from '@/lib/database'
+import Footer from '@/components/Footer'
 
 const JoinEvent = () =>{
   const navigate = useNavigate()
@@ -116,6 +117,7 @@ const JoinEvent = () =>{
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }
