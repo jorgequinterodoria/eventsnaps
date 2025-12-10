@@ -200,17 +200,26 @@ const EventPage = () =>{
                 {formatTimeRemaining(event.expires_at)}
               </div>
               
+            <div className="flex items-center text-sm text-gray-600">
+              <Users className="h-4 w-4 mr-1" />
+              {photos.length} fotos
+            </div>
+            
+            {event.moderation_enabled && (
               <div className="flex items-center text-sm text-gray-600">
-                <Users className="h-4 w-4 mr-1" />
-                {photos.length} fotos
+                <Shield className="h-4 w-4 mr-1" />
+                Con moderación
               </div>
-              
-              {event.moderation_enabled && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Shield className="h-4 w-4 mr-1" />
-                  Con moderación
-                </div>
-              )}
+            )}
+
+            {event.moderation_enabled && (
+              <button
+                onClick={() => navigate(`/moderate/${code}`)}
+                className="ml-2 flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm"
+              >
+                <Shield className="h-4 w-4 mr-1" /> Moderación
+              </button>
+            )}
 
               {photos.length > 0 && (
                 <button
@@ -348,6 +357,11 @@ const EventPage = () =>{
                 )}
               </label>
             </div>
+            {event.moderation_enabled && (
+              <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                Las fotos nuevas aparecen como "En moderación" mientras la IA las revisa.
+              </div>
+            )}
           </div>
         )}
 
@@ -380,6 +394,7 @@ const EventPage = () =>{
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }
@@ -430,6 +445,12 @@ function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { phot
           </span>
         </div>
       )}
+      {!loading && photo.status === 'pending' && (
+        <div className="absolute top-2 left-2 px-2 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800 flex items-center">
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-800 mr-1"></div>
+          En moderación
+        </div>
+      )}
       {photo.caption && (
         <div className="p-4">
           <p className="text-sm text-gray-600">{photo.caption}</p>
@@ -461,7 +482,6 @@ function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { phot
           </button>
         </div>
       )}
-      <Footer />
     </div>
   )
 }

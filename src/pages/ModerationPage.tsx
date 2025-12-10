@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, X, Shield, AlertCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getEventByCode, getModerationQueue, moderatePhoto } from '@/lib/database'
+import { getEventByCode, getModerationQueue, moderatePhoto, setModerationAISuggestion } from '@/lib/database'
 import { analyzePhotoForModeration } from '@/lib/gemini'
 import { getPhotoUrl } from '@/lib/database'
 import type { Event as EventType } from '@/lib/supabase'
@@ -30,16 +30,14 @@ const ModerationPage= () =>{
       const queueData = await getModerationQueue(eventData.id)
       setQueue(queueData)
 
-      // Analyze photos with Gemini
       for (const item of queueData) {
         if (!item.gemini_suggestion && item.photos) {
           try {
             const photoUrl = await getPhotoUrl(item.photos.storage_path)
             const analysis = await analyzePhotoForModeration(photoUrl)
-            
-            // Update the item with Gemini suggestion
             item.gemini_suggestion = analysis.suggestion
             item.confidence_score = analysis.confidence
+            await setModerationAISuggestion(item.id, analysis.suggestion, analysis.confidence)
           } catch (error) {
             console.error('Failed to analyze photo:', error)
           }

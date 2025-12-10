@@ -10,25 +10,38 @@ export async function analyzePhotoForModeration(imageUrl: string): Promise<{
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     
-    const prompt = `Analyze this image for content moderation. Determine if it's appropriate for a general social event photo sharing platform. Consider:
-    
-    APPROVE if the image contains:
-    - People at social events, parties, gatherings
-    - Food, drinks, decorations
-    - Venues, locations, landscapes
-    - Group photos, selfies
-    - General event documentation
-    
-    REJECT if the image contains:
-    - Inappropriate nudity or sexual content
-    - Violence, weapons, or disturbing content
-    - Hate symbols or offensive material
-    - Illegal activities
-    - Spam or irrelevant content
-    
-    Respond with exactly: APPROVE or REJECT followed by a confidence score (0-1) and a brief reason.
-    Example format: "APPROVE 0.95 Family gathering photo"
-    `
+  const prompt = `
+You are an expert Trust & Safety content moderator for a general-audience social photo sharing platform. Your task is to analyze the input image and determine if it is safe and appropriate for a diverse user base, including families.
+
+Review the image against the following detailed criteria:
+
+**CRITERIA FOR APPROVAL (Safe Content):**
+* **Social Interaction:** People smiling, talking, dancing, and interacting positively at events (weddings, birthdays, casual meetups).
+* **Contextual Clothing:** Swimwear is acceptable ONLY if the context is appropriate (e.g., beach, pool, boat).
+* **Standard Event Elements:** Food, decorations, venues, landscapes, pets present at events.
+* **Social Drinking:** Images showing adults holding alcoholic beverages (beer, wine, cocktails) in a social, non-problematic setting are generally permitted.
+
+**CRITERIA FOR REJECTION (Unsafe/Inappropriate Content):**
+* **Explicit Nudity & Sexual Content:** Genitals, buttocks, uncovered female nipples (except breastfeeding). Explicit sexual acts, implied sexual activity, or overly sexualized poses/focal points, even if clothed.
+* **Violence & Gore:** Real injuries, blood, dead bodies (human or animal), physical fighting, or realistic depictions of extreme violence.
+* **Weapons & Threats:** Firearms, knives, or other deadly weapons displayed in a threatening manner or outside of a clear sporting/recreational context (like archery).
+* **Drugs & Paraphernalia:** Illegal substances, hard drug use, or clear depictions of extreme intoxication/overdose. (Distinguish from standard social alcohol consumption).
+* **Hate & Harassment:** Symbols indicating hate groups (e.g., swastikas), offensive gestures, or text within the image promoting hate speech.
+* **PII (Personally Identifiable Information):** Clear images of credit cards, ID documents, or private phone numbers.
+
+**OUTPUT FORMAT:**
+You must respond strictly in raw JSON format with no additional text before or after. The JSON object must contain three keys:
+* "decision": Either "APPROVE" or "REJECT".
+* "confidence": A score between 0.00 and 1.00 representing your certainty.
+* "reason": A concise explanation for the decision based on the criteria above.
+
+Example of expected output for a rejection:
+{
+  "decision": "REJECT",
+  "confidence": 0.98,
+  "reason": "Contains threatening display of a firearm."
+}
+`;
 
     const result = await model.generateContent([prompt, { inlineData: { data: imageUrl, mimeType: 'image/jpeg' } }])
     const response = await result.response

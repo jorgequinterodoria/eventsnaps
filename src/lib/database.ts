@@ -65,36 +65,33 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
   const fileName = `${Date.now()}-${file.name}`
   const filePath = `events/${eventId}/${fileName}`
 
-  // Upload to Supabase Storage
   const { error: uploadError } = await supabase.storage
     .from('photos')
     .upload(filePath, file)
-
   if (uploadError) throw uploadError
 
-  // Create photo record
-  const { data: photo, error: dbError } = await supabase
-    .from('photos')
-    .insert({
-      event_id: eventId,
-      storage_path: filePath,
-      caption: caption || null,
-      uploaded_by: uploaderId
-    })
-    .select()
-    .single()
-
-  if (dbError) throw dbError
-
-  // Check if moderation is enabled for this event
   const { data: event } = await supabase
     .from('events')
     .select('moderation_enabled')
     .eq('id', eventId)
     .single()
 
+  const initialStatus: 'pending' | 'approved' = event?.moderation_enabled ? 'pending' : 'approved'
+
+  const { data: photo, error: dbError } = await supabase
+    .from('photos')
+    .insert({
+      event_id: eventId,
+      storage_path: filePath,
+      caption: caption || null,
+      uploaded_by: uploaderId,
+      status: initialStatus
+    })
+    .select()
+    .single()
+  if (dbError) throw dbError
+
   if (event?.moderation_enabled) {
-    // Add to moderation queue (RLS allows anon inserts)
     await supabase
       .from('moderation_queues')
       .insert({
@@ -149,6 +146,18 @@ export async function moderatePhoto(photoId: string, action: 'approve' | 'reject
     })
 
   if (actionError) throw actionError
+}
+
+export async function setModerationAISuggestion(
+  queueId: string,
+  suggestion: 'approve' | 'reject',
+  confidence: number
+) {
+  const { error } = await supabase
+    .from('moderation_queues')
+    .update({ gemini_suggestion: suggestion, confidence_score: confidence })
+    .eq('id', queueId)
+  if (error) throw error
 }
 
 export async function getPhotoUrl(storagePath: string): Promise<string> {
