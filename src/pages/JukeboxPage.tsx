@@ -49,10 +49,13 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
   useEffect(() => {
     loadQueue()
     const channel = supabase.channel(`jukebox:${event.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jukebox_queue', filter: `event_id=eq.${event.id}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jukebox_queue', filter: `event_id=eq.${event.id}` }, (payload) => {
+        console.log('Realtime update received:', payload)
         loadQueue()
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime connection status:', status)
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [event.id])
@@ -118,6 +121,9 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
       return
     }
 
+    // Optimistic add (optional, but good for consistency)
+    // We'll leave the actual insert to handle it for now to avoid ID issues, 
+    // unless we want to generate temp IDs. For now, let's just do the insert.
     await supabase.from('jukebox_queue').insert({
       event_id: event.id,
       track_id: track.id,
@@ -136,7 +142,31 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
   }
 
   const vote = async (item: any) => {
-    await supabase.from('jukebox_queue').update({ votes: item.votes + 1 }).eq('id', item.id)
+    // Optimistic Update
+    setQueue(prevQueue => prevQueue.map(q => {
+        if (q.id === item.id) {
+            return { ...q, votes: q.votes + 1 }
+        }
+        return q
+    }).sort((a, b) => b.votes - a.votes)) // Re-sort optimistically
+
+    try {
+        const { error } = await supabase.from('jukebox_queue')
+            .update({ votes: item.votes + 1 })
+            .eq('id', item.id)
+        
+        if (error) throw error
+    } catch (err) {
+        console.error('Error voting:', err)
+        // Revert on error
+        setQueue(prevQueue => prevQueue.map(q => {
+            if (q.id === item.id) {
+                return { ...q, votes: item.votes } // Revert to original
+            }
+            return q
+        }).sort((a, b) => b.votes - a.votes))
+        alert('Error al actualizar el voto')
+    }
   }
 
   if (initializing) {
