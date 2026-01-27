@@ -5,6 +5,8 @@ import EventPage from "@/pages/EventPage"
 import CreateEvent from "@/pages/CreateEvent";
 import JoinEvent from "@/pages/JoinEvent";
 import ModerationPage from "@/pages/ModerationPage";
+import AdminLogin from "@/pages/AdminLogin";
+import AdminDashboard from "@/pages/AdminDashboard";
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
               <Home />
             </>
           } />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/create" element={
             <>
               <Navigation />

@@ -118,6 +118,96 @@ export type Database = {
           actioned_at?: string
         }
       }
+      jukebox_settings: {
+        Row: {
+          event_id: string
+          is_active: boolean
+          vibe_filters: string[]
+          spotify_playlist_id: string | null
+          provider: 'spotify' | 'youtube'
+          created_at: string
+        }
+        Insert: {
+          event_id: string
+          is_active?: boolean
+          vibe_filters?: string[]
+          spotify_playlist_id?: string | null
+          provider?: 'spotify' | 'youtube'
+          created_at?: string
+        }
+        Update: {
+          event_id?: string
+          is_active?: boolean
+          vibe_filters?: string[]
+          spotify_playlist_id?: string | null
+          provider?: 'spotify' | 'youtube'
+          created_at?: string
+        }
+      }
+      jukebox_queue: {
+        Row: {
+          id: string
+          event_id: string
+          track_id: string
+          spotify_track_id: string
+          title: string
+          artist: string
+          album_art: string | null
+          genre: string | null
+          votes: number
+          voters: any
+          status: 'pending' | 'played'
+          provider: 'spotify' | 'youtube'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          track_id: string
+          spotify_track_id?: string
+          title: string
+          artist: string
+          album_art?: string | null
+          genre?: string | null
+          votes?: number
+          voters?: any
+          status?: 'pending' | 'played'
+          provider?: 'spotify' | 'youtube'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          track_id?: string
+          spotify_track_id?: string
+          title?: string
+          artist?: string
+          album_art?: string | null
+          genre?: string | null
+          votes?: number
+          voters?: any
+          status?: 'pending' | 'played'
+          provider?: 'spotify' | 'youtube'
+          created_at?: string
+        }
+      }
+      admin_config: {
+        Row: {
+          key: string
+          value: string
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value: string
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          value?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -127,3 +217,6 @@ export type Event = Tables['events']['Row']
 export type Photo = Tables['photos']['Row']
 export type ModerationQueue = Tables['moderation_queues']['Row']
 export type ModerationAction = Tables['moderation_actions']['Row']
+export type JukeboxSettings = Tables['jukebox_settings']['Row']
+export type JukeboxQueue = Tables['jukebox_queue']['Row']
+export type AdminConfig = Tables['admin_config']['Row']

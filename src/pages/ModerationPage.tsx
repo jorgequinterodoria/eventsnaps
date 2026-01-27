@@ -33,11 +33,14 @@ const ModerationPage= () =>{
       for (const item of queueData) {
         if (!item.gemini_suggestion && item.photos) {
           try {
-            const photoUrl = await getPhotoUrl(item.photos.storage_path)
-            const analysis = await analyzePhotoForModeration(photoUrl)
+            const analysis = await analyzePhotoForModeration(item.photo_id, item.photos.storage_path)
             item.gemini_suggestion = analysis.suggestion
             item.confidence_score = analysis.confidence
             await setModerationAISuggestion(item.id, analysis.suggestion, analysis.confidence)
+            const AUTO_APPROVE_THRESHOLD = 0.9
+            if (analysis.suggestion === 'reject' || (analysis.suggestion === 'approve' && analysis.confidence >= AUTO_APPROVE_THRESHOLD)) {
+              setQueue((prev) => prev.filter(q => q.photo_id !== item.photo_id))
+            }
           } catch (error) {
             console.error('Failed to analyze photo:', error)
           }
