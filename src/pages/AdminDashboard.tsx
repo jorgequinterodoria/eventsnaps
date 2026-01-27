@@ -218,21 +218,10 @@ const AdminDashboard = () => {
                         {isActive ? 'Desactivar' : 'Activar'}
                       </button>
                       <button
-                        onClick={async () => {
-                            const { data: queue } = await supabase.from('jukebox_queue').select('spotify_track_id, title, artist').eq('event_id', event.id)
-                            if (queue) {
-                                const text = queue.map(q => `spotify:track:${q.spotify_track_id} - ${q.title} (${q.artist})`).join('\n')
-                                const blob = new Blob([text], { type: 'text/plain' })
-                                const url = URL.createObjectURL(blob)
-                                const a = document.createElement('a')
-                                a.href = url
-                                a.download = `playlist_${event.code}.txt`
-                                a.click()
-                            }
-                        }}
+                        onClick={() => window.open(`/event/${event.code}`, '_blank')}
                         className="text-sm text-green-600 hover:text-green-900"
                       >
-                        Exportar
+                        Ver Lista
                       </button>
                     </td>
                   </tr>

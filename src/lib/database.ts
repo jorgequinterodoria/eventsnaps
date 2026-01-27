@@ -15,7 +15,7 @@ export interface ModerationQueueItem {
 export async function createEvent(duration: '24h' | '72h', moderationEnabled: boolean = false, creatorId: string = 'anonymous') {
   const code = generateEventCode()
   const expiresAt = new Date()
-  
+
   if (duration === '24h') {
     expiresAt.setHours(expiresAt.getHours() + 24)
   } else {
@@ -34,6 +34,14 @@ export async function createEvent(duration: '24h' | '72h', moderationEnabled: bo
     .single()
 
   if (error) throw error
+
+  // Create default jukebox settings
+  await supabase.from('jukebox_settings').insert({
+    event_id: data.id,
+    provider: 'youtube',
+    is_active: true
+  })
+
   return data
 }
 
@@ -120,7 +128,7 @@ export async function getModerationQueue(eventId: string): Promise<ModerationQue
 
 export async function moderatePhoto(photoId: string, action: 'approve' | 'reject', reason?: string) {
   const moderatorId = 'anonymous'
-  
+
   // Update photo status
   const { error: photoError } = await supabase
     .from('photos')
@@ -164,7 +172,7 @@ export async function getPhotoUrl(storagePath: string): Promise<string> {
   const { data } = await supabase.storage
     .from('photos')
     .getPublicUrl(storagePath)
-  
+
   return data.publicUrl
 }
 

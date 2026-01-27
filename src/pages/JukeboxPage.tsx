@@ -186,7 +186,9 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
           Playlist
         </h2>
         <h3 className="text-lg font-semibold flex items-center text-gray-700">
-          <Instagram className="mr-2 text-pink-600"/> @jorgequinterodj
+          <a href="https://www.instagram.com/jorgequinterodj/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-pink-600 transition-colors">
+            <Instagram className="mr-2 text-pink-600"/> @jorgequinterodj
+          </a>
         </h3>
       </div>
       {/* Search */}
