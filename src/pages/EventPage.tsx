@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Play, Download, Square, CheckSquare, X, Music, Image as ImageIcon } from 'lucide-react'
 import { cn, formatTimeRemaining, isEventExpired } from '@/lib/utils'
-import { getEventByCode, getEventPhotos, uploadPhoto, downloadPhotoBlob } from '@/lib/database'
+import { getEventByCode, getEventPhotos, uploadPhoto, downloadPhotoBlob, getPhotoUrl } from '@/lib/database'
 import JSZip from 'jszip'
 import { useEventRealtime } from '@/hooks/useEventRealtime'
 import { useStore } from '@/lib/store'
 import Carousel from '@/components/Carousel'
-import type { Event as EventType, Photo } from '@/lib/supabase'
+import type { Event as EventType, Photo } from '@/lib/insforge'
+import { insforge } from '@/lib/insforge'
 import Footer from '@/components/Footer'
-import { supabase } from '@/lib/supabase'
 import JukeboxPage from './JukeboxPage'
+import { useInsforgeRealtime } from '@/hooks/useInsforgeRealtime'
 
 const EventPage = () =>{
   const { code } = useParams<{ code: string }>()
@@ -28,6 +29,7 @@ const EventPage = () =>{
   
   const [jukeboxActive, setJukeboxActive] = useState(false)
   const [mode, setMode] = useState<'landing' | 'photos' | 'jukebox'>('photos')
+  const { emit } = useInsforgeRealtime(event?.id)
 
   const loadEventData = useCallback(async () => {
     if (!code) return
@@ -41,7 +43,7 @@ const EventPage = () =>{
         const eventPhotos = await getEventPhotos(eventData.id)
         setPhotos(eventPhotos)
         
-        const { data: jb } = await supabase.from('jukebox_settings').select('*').eq('event_id', eventData.id).single()
+        const { data: jb } = await insforge.database.from('jukebox_settings').select('*').eq('event_id', eventData.id).single()
         if (jb?.is_active) {
           setJukeboxActive(true)
           setMode('landing')
@@ -74,6 +76,7 @@ const EventPage = () =>{
         if (file.type.startsWith('image/')) {
           const photo = await uploadPhoto(event.id, file)
           addPhoto(photo)
+          emit('photo:uploaded', { eventId: event.id, photoId: photo.id })
         }
       }
     } catch (error) {
@@ -470,9 +473,8 @@ function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { phot
         return
       }
       try {
-        const { supabase } = await import('@/lib/supabase')
-        const { data } = supabase.storage.from('photos').getPublicUrl(photo.storage_path)
-        setImageUrl(data.publicUrl)
+        const url = await getPhotoUrl(photo.storage_path)
+        setImageUrl(url)
       } catch (error) {
         console.error('Failed to load photo:', error)
       } finally {

@@ -1,70 +1,45 @@
-import { supabase } from './supabase'
 
 export interface Track {
     id: string;
     title: string;
     artist: string;
     album_art: string | null;
+    preview_url: string | null;
     provider: 'spotify' | 'youtube';
 }
 
-export async function getSpotifyToken() {
-    const { data, error } = await supabase.functions.invoke('spotify-token', {
-        body: { action: 'get_spotify_token' }
-    })
-    if (error) throw error
-    return data.access_token
-}
+export const INSFORGE_URL = import.meta.env.VITE_INSFORGE_URL
+export const INSFORGE_ANON_KEY = import.meta.env.VITE_INSFORGE_ANON_KEY
 
-export async function searchTracks(query: string, provider: 'spotify' | 'youtube', credentials: any): Promise<Track[]> {
-    if (provider === 'spotify') {
-        return searchSpotify(query, credentials.token)
-    } else {
-        // For YouTube, we don't need credentials passed from here anymore, 
-        // as the key is handled in the backend. 
-        // We might want to clean up the signature later, but for now we ignore credentials.apiKey
-        return searchYoutube(query)
-    }
-}
+/**
+ * Search tracks using the server-side edge function.
+ * Supports both Spotify (default) and YouTube providers.
+ */
+export async function searchTracks(query: string, provider: 'spotify' | 'youtube', _credentials?: any): Promise<Track[]> {
+    const action = provider === 'spotify' ? 'search_spotify' : 'search_youtube'
 
-async function searchSpotify(query: string, token: string): Promise<Track[]> {
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+    // Direct fetch to the InsForge edge function
+    const res = await fetch(`${INSFORGE_URL}/functions/music-search`, {
+        method: 'POST',
         headers: {
-            Authorization: `Bearer ${token}`
-        }
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${INSFORGE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ action, query }),
     })
-    if (!res.ok) throw new Error('Spotify search failed')
-    const data = await res.json()
-
-    return data.tracks.items.map((item: any) => ({
-        id: item.id,
-        title: item.name,
-        artist: item.artists[0].name,
-        album_art: item.album.images[0]?.url || null,
-        provider: 'spotify'
-    }))
-}
-
-async function searchYoutube(query: string): Promise<Track[]> {
-    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY
-    if (!apiKey) {
-        throw new Error('VITE_YOUTUBE_API_KEY is not defined')
-    }
-
-    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=10`)
 
     if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error?.message || 'YouTube search failed')
+        const errorData = await res.json().catch(() => ({ error: res.statusText }))
+        console.error(`${provider} search error:`, errorData)
+        throw new Error(errorData.error || `Search failed (${res.status})`)
     }
 
     const data = await res.json()
 
-    return data.items.map((item: any) => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        artist: item.snippet.channelTitle,
-        album_art: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url || null,
-        provider: 'youtube'
-    }))
+    if (data?.error) {
+        console.error(`${provider} search error:`, data.error)
+        throw new Error(data.error)
+    }
+
+    return (data?.tracks || []) as Track[]
 }

@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { insforge } from '@/lib/insforge'
 import { useNavigate } from 'react-router-dom'
 import { Activity } from 'lucide-react'
-import { Bar } from 'react-chartjs-2'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
@@ -13,10 +10,6 @@ const AdminDashboard = () => {
   const [clientSecret, setClientSecret] = useState('')
   const [youtubeKey, setYoutubeKey] = useState('')
   const [events, setEvents] = useState<any[]>([])
-  const [chartData, setChartData] = useState<any>({
-    labels: [],
-    datasets: []
-  })
   
   useEffect(() => {
     if (!localStorage.getItem('admin_token')) {
@@ -24,51 +17,29 @@ const AdminDashboard = () => {
     }
     loadConfig()
     loadEvents()
-    loadChartData()
   }, [navigate])
 
   const loadConfig = async () => {
-    const { data } = await supabase.from('admin_config').select('*')
+    const { data } = await insforge.database.from('admin_config').select('*')
     if (data) {
-      const id = data.find(r => r.key === 'spotify_client_id')?.value
-      const secret = data.find(r => r.key === 'spotify_client_secret')?.value
-      const yt = data.find(r => r.key === 'youtube_api_key')?.value
-      if (id) setClientId(id)
-      if (secret) setClientSecret(secret)
-      if (yt) setYoutubeKey(yt)
+      data.forEach((item: any) => {
+          if (item.key === 'spotify_client_id') setClientId(item.value)
+          if (item.key === 'spotify_client_secret') setClientSecret(item.value)
+          if (item.key === 'youtube_api_key') setYoutubeKey(item.value)
+      })
     }
   }
 
   const loadEvents = async () => {
-    const { data: eventsData } = await supabase.from('events').select(`
+    const { data: eventsData } = await insforge.database.from('events').select(`
       *,
       jukebox_settings (*)
     `).order('created_at', { ascending: false })
     setEvents(eventsData || [])
   }
 
-  const loadChartData = async () => {
-    const { data } = await supabase.from('jukebox_queue').select('genre, votes')
-    const genres: Record<string, number> = {}
-    if (data) {
-        data.forEach(d => {
-            const g = d.genre || 'Desconocido'
-            genres[g] = (genres[g] || 0) + (d.votes || 0)
-        })
-    }
-    
-    setChartData({
-        labels: Object.keys(genres),
-        datasets: [{
-            label: 'Votos por Género (Tendencia)',
-            data: Object.values(genres),
-            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-        }]
-    })
-  }
-
   const saveConfig = async () => {
-    const { error } = await supabase.from('admin_config').upsert([
+    const { error } = await insforge.database.from('admin_config').upsert([
       { key: 'spotify_client_id', value: clientId },
       { key: 'spotify_client_secret', value: clientSecret },
       { key: 'youtube_api_key', value: youtubeKey }
@@ -82,18 +53,18 @@ const AdminDashboard = () => {
 
   const toggleJukebox = async (eventId: string, isActive: boolean, provider: 'spotify' | 'youtube' = 'spotify') => {
      // Check if settings exist
-     const { data } = await supabase.from('jukebox_settings').select('*').eq('event_id', eventId).single()
+     const { data } = await insforge.database.from('jukebox_settings').select('*').eq('event_id', eventId).single()
      
      if (data) {
-       await supabase.from('jukebox_settings').update({ is_active: !isActive, provider }).eq('event_id', eventId)
+       await insforge.database.from('jukebox_settings').update({ is_active: !isActive, provider }).eq('event_id', eventId)
      } else {
-       await supabase.from('jukebox_settings').insert({ event_id: eventId, is_active: true, provider })
+       await insforge.database.from('jukebox_settings').insert({ event_id: eventId, is_active: true, provider })
      }
      loadEvents()
   }
 
   const changeProvider = async (eventId: string, provider: string) => {
-      await supabase.from('jukebox_settings').update({ provider }).eq('event_id', eventId)
+      await insforge.database.from('jukebox_settings').update({ provider }).eq('event_id', eventId)
       loadEvents()
   }
 
@@ -114,13 +85,6 @@ const AdminDashboard = () => {
         </nav>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Análisis de Energía (Votos por Género)</h2>
-        <div className="h-64">
-            <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-        </div>
-      </div>
-
       <div className="bg-white shadow rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Configuración de APIs</h2>
         <div className="grid grid-cols-1 gap-6 max-w-2xl">

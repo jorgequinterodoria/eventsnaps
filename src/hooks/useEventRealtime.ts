@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import type { Photo } from '@/lib/supabase'
+import { insforge } from '@/lib/insforge'
+import type { Photo } from '@/lib/insforge'
 
 export function useEventRealtime(
   eventId: string | undefined,
@@ -11,34 +11,53 @@ export function useEventRealtime(
   useEffect(() => {
     if (!eventId) return
 
-    const channel = supabase
-      .channel(`realtime:photos:${eventId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'photos', filter: `event_id=eq.${eventId}` },
-        (payload) => {
-          const current = getCurrentPhotos()
-          const newPhoto = payload.new as Photo
-          if (!current.some((p) => p.id === newPhoto.id)) {
-            addPhoto(newPhoto)
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'photos', filter: `event_id=eq.${eventId}` },
-        (payload) => {
-          const current = getCurrentPhotos()
-          const updated = payload.new as Photo
-          const next = current.map((p) => (p.id === updated.id ? updated : p))
-          setPhotos(next)
-        }
-      )
+    let mounted = true
 
-    channel.subscribe()
+    const setup = async () => {
+      await insforge.realtime.connect()
+      await insforge.realtime.subscribe(`photos:${eventId}`)
+
+      insforge.realtime.on('INSERT_photo', (payload: any) => {
+        if (!mounted) return
+        const current = getCurrentPhotos()
+        const newPhoto: Photo = {
+          id: payload.id,
+          event_id: payload.event_id,
+          storage_path: payload.storage_path,
+          storage_url: payload.storage_url,
+          caption: payload.caption,
+          status: payload.status,
+          uploaded_by: payload.uploaded_by,
+          uploaded_at: payload.uploaded_at
+        }
+        if (!current.some((p) => p.id === newPhoto.id)) {
+          addPhoto(newPhoto)
+        }
+      })
+
+      insforge.realtime.on('UPDATE_photo', (payload: any) => {
+        if (!mounted) return
+        const current = getCurrentPhotos()
+        const updated: Photo = {
+          id: payload.id,
+          event_id: payload.event_id,
+          storage_path: payload.storage_path,
+          storage_url: payload.storage_url,
+          caption: payload.caption,
+          status: payload.status,
+          uploaded_by: payload.uploaded_by,
+          uploaded_at: payload.uploaded_at
+        }
+        const next = current.map((p) => (p.id === updated.id ? updated : p))
+        setPhotos(next)
+      })
+    }
+
+    setup().catch(console.error)
 
     return () => {
-      supabase.removeChannel(channel)
+      mounted = false
+      insforge.realtime.unsubscribe(`photos:${eventId}`)
     }
   }, [eventId, getCurrentPhotos, addPhoto, setPhotos])
 }

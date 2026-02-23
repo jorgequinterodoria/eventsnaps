@@ -1,6 +1,6 @@
-import { supabase } from './supabase'
+import { insforge } from './insforge'
 import { generateEventCode } from './utils'
-import type { Event, Photo } from './supabase'
+import type { Event, Photo } from './insforge'
 
 export interface ModerationQueueItem {
   id: string
@@ -22,7 +22,7 @@ export async function createEvent(duration: '24h' | '72h', moderationEnabled: bo
     expiresAt.setHours(expiresAt.getHours() + 72)
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await insforge.database
     .from('events')
     .insert({
       code,
@@ -36,9 +36,9 @@ export async function createEvent(duration: '24h' | '72h', moderationEnabled: bo
   if (error) throw error
 
   // Create default jukebox settings
-  await supabase.from('jukebox_settings').insert({
+  await insforge.database.from('jukebox_settings').insert({
     event_id: data.id,
-    provider: 'youtube',
+    provider: 'spotify',
     is_active: true
   })
 
@@ -46,7 +46,7 @@ export async function createEvent(duration: '24h' | '72h', moderationEnabled: bo
 }
 
 export async function getEventByCode(code: string): Promise<Event | null> {
-  const { data, error } = await supabase
+  const { data, error } = await insforge.database
     .from('events')
     .select('*')
     .eq('code', code)
@@ -58,7 +58,7 @@ export async function getEventByCode(code: string): Promise<Event | null> {
 }
 
 export async function getEventPhotos(eventId: string): Promise<Photo[]> {
-  const { data, error } = await supabase
+  const { data, error } = await insforge.database
     .from('photos')
     .select('*')
     .eq('event_id', eventId)
@@ -73,12 +73,12 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
   const fileName = `${Date.now()}-${file.name}`
   const filePath = `events/${eventId}/${fileName}`
 
-  const { error: uploadError } = await supabase.storage
+  const { data: uploadData, error: uploadError } = await insforge.storage
     .from('photos')
     .upload(filePath, file)
   if (uploadError) throw uploadError
 
-  const { data: event } = await supabase
+  const { data: event } = await insforge.database
     .from('events')
     .select('moderation_enabled')
     .eq('id', eventId)
@@ -86,11 +86,12 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
 
   const initialStatus: 'pending' | 'approved' = event?.moderation_enabled ? 'pending' : 'approved'
 
-  const { data: photo, error: dbError } = await supabase
+  const { data: photo, error: dbError } = await insforge.database
     .from('photos')
     .insert({
       event_id: eventId,
-      storage_path: filePath,
+      storage_path: uploadData?.key || filePath,
+      storage_url: uploadData?.url || null,
       caption: caption || null,
       uploaded_by: uploaderId,
       status: initialStatus
@@ -100,7 +101,7 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
   if (dbError) throw dbError
 
   if (event?.moderation_enabled) {
-    await supabase
+    await insforge.database
       .from('moderation_queues')
       .insert({
         photo_id: photo.id,
@@ -112,7 +113,7 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
 }
 
 export async function getModerationQueue(eventId: string): Promise<ModerationQueueItem[]> {
-  const { data, error } = await supabase
+  const { data, error } = await insforge.database
     .from('moderation_queues')
     .select(`
       *,
@@ -130,7 +131,7 @@ export async function moderatePhoto(photoId: string, action: 'approve' | 'reject
   const moderatorId = 'anonymous'
 
   // Update photo status
-  const { error: photoError } = await supabase
+  const { error: photoError } = await insforge.database
     .from('photos')
     .update({ status: action === 'approve' ? 'approved' : 'rejected' })
     .eq('id', photoId)
@@ -138,13 +139,13 @@ export async function moderatePhoto(photoId: string, action: 'approve' | 'reject
   if (photoError) throw photoError
 
   // Mark moderation queue as processed
-  await supabase
+  await insforge.database
     .from('moderation_queues')
     .update({ processed: true })
     .eq('photo_id', photoId)
 
   // Record moderation action
-  const { error: actionError } = await supabase
+  const { error: actionError } = await insforge.database
     .from('moderation_actions')
     .insert({
       photo_id: photoId,
@@ -161,7 +162,7 @@ export async function setModerationAISuggestion(
   suggestion: 'approve' | 'reject',
   confidence: number
 ) {
-  const { error } = await supabase
+  const { error } = await insforge.database
     .from('moderation_queues')
     .update({ gemini_suggestion: suggestion, confidence_score: confidence })
     .eq('id', queueId)
@@ -169,15 +170,24 @@ export async function setModerationAISuggestion(
 }
 
 export async function getPhotoUrl(storagePath: string): Promise<string> {
-  const { data } = await supabase.storage
+  // First try to get the URL from the database
+  const { data } = await insforge.database
     .from('photos')
-    .getPublicUrl(storagePath)
+    .select('storage_url')
+    .eq('storage_path', storagePath)
+    .single()
 
-  return data.publicUrl
+  if (data?.storage_url) {
+    return data.storage_url
+  }
+
+  // Fallback: construct URL from base URL + bucket + path
+  const baseUrl = import.meta.env.VITE_INSFORGE_URL
+  return `${baseUrl}/api/storage/buckets/photos/objects/${encodeURIComponent(storagePath)}`
 }
 
 export async function downloadPhotoBlob(storagePath: string): Promise<Blob> {
-  const { data, error } = await supabase.storage
+  const { data, error } = await insforge.storage
     .from('photos')
     .download(storagePath)
   if (error) throw error

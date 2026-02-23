@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
-import { getSpotifyToken, searchTracks, type Track } from '@/lib/music-provider'
+import { insforge } from '@/lib/insforge'
+import { searchTracks, type Track } from '@/lib/music-provider'
 import { ThumbsUp, Music, Search, Plus, Youtube, Instagram } from 'lucide-react'
-import type { Event } from '@/lib/supabase'
+import type { Event } from '@/lib/insforge'
 import debounce from 'lodash.debounce'
+import { useInsforgeRealtime } from '@/hooks/useInsforgeRealtime'
+import WaveVisualizer from '@/components/WaveVisualizer'
+import QueueAnalytics from '@/components/QueueAnalytics'
+import { INSFORGE_URL, INSFORGE_ANON_KEY } from '@/lib/music-provider'
 
 interface JukeboxPageProps {
   event: Event
@@ -19,23 +23,19 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
   // Config state
   const [provider, setProvider] = useState<'spotify' | 'youtube'>('spotify')
   const [credentials, setCredentials] = useState<any>(null)
+  const { on, emit } = useInsforgeRealtime(event.id)
+  const [nowPlaying, setNowPlaying] = useState<Track | null>(null)
+  const isAdmin = typeof window !== 'undefined' && !!localStorage.getItem('admin_token')
 
   // Initial Load & Config
   useEffect(() => {
     // Determine provider from event settings
     const loadSettings = async () => {
         try {
-            const { data } = await supabase.from('jukebox_settings').select('provider').eq('event_id', event.id).single()
+            const { data } = await insforge.database.from('jukebox_settings').select('provider').eq('event_id', event.id).single()
             const activeProvider = data?.provider || 'spotify'
             setProvider(activeProvider)
-
-            if (activeProvider === 'spotify') {
-                const token = await getSpotifyToken()
-                setCredentials({ token })
-            } else {
-                // YouTube handled server-side
-                setCredentials({}) 
-            }
+            setCredentials({}) 
         } catch (e) {
             console.error('Error loading credentials', e)
         } finally {
@@ -45,24 +45,25 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
     loadSettings()
   }, [event.id])
   
-  // Realtime Queue
+  // Realtime Queue via InsForge
   useEffect(() => {
     loadQueue()
-    const channel = supabase.channel(`jukebox:${event.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jukebox_queue', filter: `event_id=eq.${event.id}` }, (payload) => {
-        console.log('Realtime update received:', payload)
-        loadQueue()
-      })
-      .subscribe((status) => {
-        console.log('Realtime connection status:', status)
-      })
 
-    return () => { supabase.removeChannel(channel) }
-  }, [event.id])
+    // Listen for jukebox realtime events
+    const handleJukeboxChange = () => {
+      loadQueue()
+    }
+    on('INSERT_jukebox', handleJukeboxChange)
+    on('UPDATE_jukebox', handleJukeboxChange)
+
+    return () => {
+      // Cleanup not strictly needed since InsForge handles it, but good practice
+    }
+  }, [event.id, on])
 
 
   const loadQueue = async () => {
-    const { data } = await supabase.from('jukebox_queue')
+    const { data } = await insforge.database.from('jukebox_queue')
       .select('*')
       .eq('event_id', event.id)
       .eq('status', 'pending')
@@ -77,13 +78,10 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
         if (!q.trim()) return
         setLoading(true)
         try {
-            // For Spotify we need credentials, for YouTube we don't (handled via env)
-            // But we already set credentials to {} for YouTube in loadSettings or simple check provider
             const tracks = await searchTracks(q, provider, credentials)
             setResults(tracks)
         } catch (err) {
             console.error(err)
-            // Silent fail or toast
         } finally {
             setLoading(false)
         }
@@ -95,9 +93,6 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
       const val = e.target.value
       setQuery(val)
       if (val.trim()) {
-          // Clear results if new search starts? Or keep old? 
-          // Keeping old is better for UX until new arrives, but can correspond to old query.
-          // Let's clear if empty, else debounce.
           debouncedSearch(val)
       } else {
           setResults([])
@@ -107,38 +102,64 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
   const handleManualSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       if (query.trim()) {
-          debouncedSearch.cancel() // Cancel pending
-          debouncedSearch(query)   // Execute immediately
+          debouncedSearch.cancel()
+          debouncedSearch(query)
           debouncedSearch.flush()
       }
   }
 
   const addToQueue = async (track: Track) => {
-    // Check if already in queue (check both track_id and spotify_track_id for legacy)
-    const existing = queue.find(q => q.track_id === track.id || q.spotify_track_id === track.id)
+    // Check if already in queue
+    const existing = queue.find(q => 
+      q.track_id === track.id || 
+      q.spotify_track_id === track.id ||
+      (provider === 'spotify' && q.title.toLowerCase().trim() === track.title.toLowerCase().trim() && q.artist.toLowerCase().trim() === track.artist.toLowerCase().trim())
+    )
     if (existing) {
       alert('Esta canción ya está en la cola')
       return
     }
 
-    // Optimistic add (optional, but good for consistency)
-    // We'll leave the actual insert to handle it for now to avoid ID issues, 
-    // unless we want to generate temp IDs. For now, let's just do the insert.
-    await supabase.from('jukebox_queue').insert({
+    // Fetch genre if Spotify
+    let genre = 'unknown'
+    if (provider === 'spotify') {
+      try {
+        const res = await fetch(`${INSFORGE_URL}/functions/music-search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${INSFORGE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ action: 'get_artist_genres', artists: [track.artist] }),
+        })
+        if (res.ok) {
+            const data = await res.json()
+            if (data?.genres?.[track.artist] && data.genres[track.artist] !== 'unknown') {
+                genre = data.genres[track.artist]
+            }
+        }
+      } catch (e) {
+        console.error('Failed to fetch genre', e)
+      }
+    }
+
+    await insforge.database.from('jukebox_queue').insert({
       event_id: event.id,
       track_id: track.id,
-      spotify_track_id: track.id, // Backward compat
+      spotify_track_id: track.id,
       title: track.title,
       artist: track.artist,
       album_art: track.album_art,
-      genre: 'unknown', 
+      genre: genre, 
+      preview_url: track.preview_url,
       votes: 1,
-      voters: ['me'], // Simplified
+      voters: ['me'],
       provider: provider
     })
     setQuery('')
     setResults([])
     loadQueue()
+    emit('queue:updated', { eventId: event.id })
   }
 
   const vote = async (item: any) => {
@@ -148,25 +169,38 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
             return { ...q, votes: q.votes + 1 }
         }
         return q
-    }).sort((a, b) => b.votes - a.votes)) // Re-sort optimistically
+    }).sort((a, b) => b.votes - a.votes))
 
     try {
-        const { error } = await supabase.from('jukebox_queue')
+        const { error } = await insforge.database.from('jukebox_queue')
             .update({ votes: item.votes + 1 })
             .eq('id', item.id)
         
         if (error) throw error
     } catch (err) {
         console.error('Error voting:', err)
-        // Revert on error
         setQueue(prevQueue => prevQueue.map(q => {
             if (q.id === item.id) {
-                return { ...q, votes: item.votes } // Revert to original
+                return { ...q, votes: item.votes }
             }
             return q
         }).sort((a, b) => b.votes - a.votes))
         alert('Error al actualizar el voto')
     }
+    emit('queue:updated', { eventId: event.id })
+  }
+
+  useEffect(() => {
+    on('nowPlaying:set', (payload: any) => {
+      if (payload?.eventId === event.id) {
+        setNowPlaying(payload.track)
+      }
+    })
+  }, [on, event.id])
+
+  const setNowPlayingTrack = (track: Track) => {
+    setNowPlaying(track)
+    emit('nowPlaying:set', { eventId: event.id, track })
   }
 
   if (initializing) {
@@ -180,6 +214,25 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
+      {nowPlaying && (
+        <div className="mb-6 bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {nowPlaying.album_art && <img src={nowPlaying.album_art} className="h-14 w-14 rounded mr-3 object-cover" />}
+              <div className="min-w-0">
+                <div className="font-bold truncate">{nowPlaying.title}</div>
+                <div className="text-gray-600 text-sm truncate">{nowPlaying.artist}</div>
+              </div>
+            </div>
+            {nowPlaying.preview_url && (
+              <audio src={nowPlaying.preview_url} autoPlay controls controlsList="nodownload noplaybackrate" className="h-8 w-full max-w-[200px] opacity-70 hover:opacity-100 transition-opacity" />
+            )}
+          </div>
+          <div className="mt-4">
+            <WaveVisualizer />
+          </div>
+        </div>
+      )}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
         <h2 className="text-2xl font-bold flex items-center">
           {provider === 'youtube' ? <Youtube className="mr-2 text-red-600"/> : <Music className="mr-2 text-green-600"/>} 
@@ -191,7 +244,6 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
           </a>
         </h3>
       </div>
-      {/* Search */}
       {/* Search */}
       <form onSubmit={handleManualSubmit} className="mb-6 relative">
         <input 
@@ -225,18 +277,26 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
                     <div className="text-sm text-gray-500 truncate">{track.artist}</div>
                   </div>
                 </div>
-                <button onClick={() => addToQueue(track)} className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 flex-shrink-0 ml-2">
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <button onClick={() => addToQueue(track)} className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200">
                   <Plus className="h-5 w-5" />
                 </button>
+                {isAdmin && (
+                  <button onClick={() => setNowPlayingTrack(track)} className="px-3 py-2 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+                    Now Playing
+                  </button>
+                )}
+                </div>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Queue */}
+      {/* Queue & Analytics */}
       <div>
         <h3 className="text-xl font-semibold mb-3">Cola de Reproducción</h3>
+        
         <div className="space-y-3">
           {queue.map((item, index) => (
             <div key={item.id} className={`bg-white p-4 rounded-lg shadow flex justify-between items-center ${index === 0 ? 'border-2 border-blue-500' : ''}`}>
@@ -253,7 +313,19 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
                    </div>
                  </div>
                </div>
-               <div className="flex items-center ml-2 flex-shrink-0">
+               <div className="flex items-center ml-2 flex-shrink-0 gap-2">
+                 {isAdmin && (
+                   <button onClick={() => setNowPlayingTrack({
+                     id: item.track_id,
+                     title: item.title,
+                     artist: item.artist,
+                     album_art: item.album_art,
+                     preview_url: item.preview_url,
+                     provider: item.provider
+                   } as Track)} className="px-3 py-1 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+                     Play
+                   </button>
+                 )}
                  <button onClick={() => vote(item)} className="flex items-center space-x-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full">
                    <ThumbsUp className="h-4 w-4" />
                    <span className="font-bold">{item.votes}</span>
@@ -263,6 +335,10 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
           ))}
           {queue.length === 0 && <p className="text-gray-500 text-center py-8">No hay canciones en la cola. ¡Sé el primero!</p>}
         </div>
+
+        {queue.length > 0 && (
+          <QueueAnalytics queue={queue} provider={provider} eventId={event.id} />
+        )}
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { getEventByCode, getModerationQueue, moderatePhoto, setModerationAISuggestion } from '@/lib/database'
 import { analyzePhotoForModeration } from '@/lib/gemini'
 import { getPhotoUrl } from '@/lib/database'
-import type { Event as EventType } from '@/lib/supabase'
+import type { Event as EventType } from '@/lib/insforge'
 import Footer from '@/components/Footer'
 
 const ModerationPage= () =>{

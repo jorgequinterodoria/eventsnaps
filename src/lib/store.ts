@@ -1,12 +1,12 @@
 import { create } from 'zustand'
-import type { Event, Photo } from './supabase'
+import type { Event, Photo } from './insforge'
 
 interface AppState {
   currentEvent: Event | null
   photos: Photo[]
   isLoading: boolean
   error: string | null
-  
+
   setCurrentEvent: (event: Event | null) => void
   setPhotos: (photos: Photo[]) => void
   setLoading: (loading: boolean) => void
@@ -19,7 +19,7 @@ export const useStore = create<AppState>((set) => ({
   photos: [],
   isLoading: false,
   error: null,
-  
+
   setCurrentEvent: (event) => set({ currentEvent: event }),
   setPhotos: (photos) => set({ photos }),
   setLoading: (loading) => set({ isLoading: loading }),

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Photo } from '@/lib/supabase'
+import type { Photo } from '@/lib/insforge'
 import { getPhotoUrl } from '@/lib/database'
 import { Play, Pause, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
