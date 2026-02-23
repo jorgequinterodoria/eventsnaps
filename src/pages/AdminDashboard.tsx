@@ -121,7 +121,7 @@ const AdminDashboard = () => {
                 value={youtubeKey}
                 onChange={(e) => setYoutubeKey(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                placeholder="AIza..."
+                placeholder="Tu API Key de YouTube"
                 />
             </div>
           </div>
