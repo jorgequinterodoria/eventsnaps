@@ -1,32 +1,70 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clock, Shield, CheckCircle } from 'lucide-react'
+import { Clock, Shield, CheckCircle, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createEvent } from '@/lib/database'
 import QRCode from '@/components/QRCode'
 import Footer from '@/components/Footer'
+import { insforge } from '@/lib/insforge'
+import { useAlert } from '@/contexts/AlertContext'
+import { checkFeature, resolveUserFeatures } from '@/lib/subscription'
 
 const CreateEvent = () =>{
   const navigate = useNavigate()
+  const { showAlert } = useAlert()
   const [duration, setDuration] = useState<'24h' | '72h'>('24h')
   const [moderationEnabled, setModerationEnabled] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [createdCode, setCreatedCode] = useState<string>('')
+  
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [galleryAllowed, setGalleryAllowed] = useState(false)
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await insforge.auth.getCurrentSession()
+      if (data?.session?.user) {
+        const userId = data.session.user.id
+        const { data: profile } = await insforge.database
+          .from('user_profiles')
+          .select('plan_id')
+          .eq('id', userId)
+          .single()
+        setUserProfile({ id: userId, ...profile })
+
+        // Resolve actual feature access (subscription → profile fallback)
+        const features = await resolveUserFeatures(userId)
+        setGalleryAllowed(features.gallery)
+      }
+    }
+    fetchUser()
+  }, [])
 
   const handleCreateEvent = async () => {
     setIsCreating(true)
     try {
-      const event = await createEvent(duration, moderationEnabled)
+      const creatorId = userProfile ? userProfile.id : 'anonymous'
+
+      // Gate: only users with gallery feature can enable moderation
+      let finalModeration = false
+      if (moderationEnabled && userProfile?.id) {
+        const result = await checkFeature(userProfile.id, 'gallery')
+        finalModeration = result.allowed ? moderationEnabled : false
+      }
+
+      const event = await createEvent(duration, finalModeration, creatorId)
       setCreatedCode(event.code)
       setShowQR(true)
     } catch (error) {
       console.error('Error al crear el evento:', error)
-      alert('No se pudo crear el evento. Intenta nuevamente.')
+      showAlert('No se pudo crear el evento. Intenta nuevamente.', 'Error')
     } finally {
       setIsCreating(false)
     }
   }
+
+  const isPro = galleryAllowed
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -34,11 +72,17 @@ const CreateEvent = () =>{
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">Crear nuevo evento</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Configura tu espacio para compartir fotos
+            {isPro ? 'Configura tu espacio para compartir fotos y música' : 'Configura tu Jukebox musical'}
           </p>
         </div>
 
-        <div className="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg sm:px-10">
+        {!userProfile && (
+           <div className="mt-4 bg-blue-50 text-blue-700 p-3 rounded-md text-sm text-center">
+              Inicia sesión para poder guardar tus eventos y acceder a funciones avanzadas.
+           </div>
+        )}
+
+        <div className="mt-6 bg-white py-8 px-6 shadow-lg rounded-lg sm:px-10">
           {/* Duration Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -79,35 +123,48 @@ const CreateEvent = () =>{
             </div>
           </div>
 
-          {/* Moderation Toggle */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Shield className="h-5 w-5 text-blue-600 mr-2" />
-                <label className="text-sm font-medium text-gray-700">
-                  Moderación de contenido con IA
-                </label>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModerationEnabled(!moderationEnabled)}
-                className={cn(
-                  "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-                  moderationEnabled ? 'bg-blue-600' : 'bg-gray-200'
-                )}
-              >
-                <span
+          {/* Moderation Toggle (Only Pro) */}
+          {isPro ? (
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Shield className="h-5 w-5 text-blue-600 mr-2" />
+                  <label className="text-sm font-medium text-gray-700">
+                    Moderación de contenido con IA
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModerationEnabled(!moderationEnabled)}
                   className={cn(
-                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                    moderationEnabled ? 'translate-x-5' : 'translate-x-0'
+                    "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                    moderationEnabled ? 'bg-blue-600' : 'bg-gray-200'
                   )}
-                />
-              </button>
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      moderationEnabled ? 'translate-x-5' : 'translate-x-0'
+                    )}
+                  />
+                </button>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Cuando está activada, las fotos subidas serán revisadas por IA antes de mostrarse.
+              </p>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              Cuando está activada, las fotos subidas serán revisadas por IA antes de mostrarse.
-            </p>
-          </div>
+          ) : (
+            <div className="mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 flex items-start">
+              <Crown className="h-5 w-5 text-amber-500 mr-3 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-amber-800">Mejora a Pro para Galería de Fotos</h4>
+                <p className="mt-1 text-sm text-amber-700">
+                  Tu plan actual solo te permite crear un Jukebox musical. Adquiere el plan Pro para habilitar
+                  la subida de fotos y moderación con IA.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Create Button */}
           <button

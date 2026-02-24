@@ -12,10 +12,14 @@ import { insforge } from '@/lib/insforge'
 import Footer from '@/components/Footer'
 import JukeboxPage from './JukeboxPage'
 import { useInsforgeRealtime } from '@/hooks/useInsforgeRealtime'
+import { useAlert } from '@/contexts/AlertContext'
+import { checkFeature, getBrandingConfig, resolveUserFeatures } from '@/lib/subscription'
+import type { BrandingConfig } from '@/lib/subscription'
 
 const EventPage = () =>{
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
+  const { showAlert } = useAlert()
   const { photos, setCurrentEvent, setPhotos, setLoading, setError, addPhoto } = useStore()
   
   const [isUploading, setIsUploading] = useState(false)
@@ -29,6 +33,9 @@ const EventPage = () =>{
   
   const [jukeboxActive, setJukeboxActive] = useState(false)
   const [mode, setMode] = useState<'landing' | 'photos' | 'jukebox'>('photos')
+  const [isCreatorPro, setIsCreatorPro] = useState(false)
+  const [creatorProfile, setCreatorProfile] = useState<any>(null)
+  const [branding, setBranding] = useState<BrandingConfig>({ showDJLogo: false, logoUrl: null, djName: null })
   const { emit } = useInsforgeRealtime(event?.id)
 
   const loadEventData = useCallback(async () => {
@@ -40,13 +47,29 @@ const EventPage = () =>{
       if (eventData) {
         setEvent(eventData)
         setCurrentEvent(eventData)
+        
+        let proStatus = false
+        if (eventData.creator_id && eventData.creator_id !== 'anonymous') {
+          const { data: profile } = await insforge.database.from('user_profiles').select('plan_id, full_name, instagram_username').eq('id', eventData.creator_id).single()
+          // Use actual feature flag instead of raw plan_id comparison
+          const features = await resolveUserFeatures(eventData.creator_id)
+          proStatus = features.gallery
+          setCreatorProfile(profile)
+          // Load white-label branding
+          const brandingCfg = await getBrandingConfig(eventData.creator_id)
+          setBranding(brandingCfg)
+        }
+        setIsCreatorPro(proStatus)
+        
         const eventPhotos = await getEventPhotos(eventData.id)
         setPhotos(eventPhotos)
         
         const { data: jb } = await insforge.database.from('jukebox_settings').select('*').eq('event_id', eventData.id).single()
         if (jb?.is_active) {
           setJukeboxActive(true)
-          setMode('landing')
+          setMode(proStatus ? 'landing' : 'jukebox')
+        } else {
+          setMode('photos')
         }
       } else {
         setError('Evento no encontrado o expirado')
@@ -68,6 +91,15 @@ const EventPage = () =>{
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0 || !event) return
+
+    // Feature gate: gallery upload requires the gallery feature
+    if (event.creator_id && event.creator_id !== 'anonymous') {
+      const gate = await checkFeature(event.creator_id, 'gallery')
+      if (!gate.allowed) {
+        showAlert(gate.message ?? 'Mejora tu plan para usar esta función', 'Plan requerido')
+        return
+      }
+    }
     
     setIsUploading(true)
     try {
@@ -81,7 +113,7 @@ const EventPage = () =>{
       }
     } catch (error) {
       console.error('Failed to upload photo:', error)
-      alert('Failed to upload photo. Please try again.')
+      showAlert('Failed to upload photo. Please try again.', 'Error')
     } finally {
       setIsUploading(false)
     }
@@ -108,7 +140,7 @@ const EventPage = () =>{
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch {
-      alert('No se pudo descargar el ZIP. Intenta nuevamente.')
+      showAlert('No se pudo descargar el ZIP. Intenta nuevamente.', 'Error')
     } finally {
       setIsDownloadingZip(false)
     }
@@ -162,7 +194,7 @@ const EventPage = () =>{
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch {
-      alert('No se pudo descargar el ZIP seleccionado. Intenta nuevamente.')
+      showAlert('No se pudo descargar el ZIP seleccionado. Intenta nuevamente.', 'Error')
     } finally {
       setIsDownloadingSelected(false)
     }
@@ -233,12 +265,24 @@ const EventPage = () =>{
       return (
           <div className="min-h-screen bg-gray-50">
              <div className="bg-white shadow-sm border-b p-4 flex items-center">
-                 <button onClick={() => setMode('landing')} className="mr-4 text-gray-600 hover:text-gray-900">
-                     <ArrowLeft className="h-6 w-6" />
-                 </button>
-                 <h1 className="text-xl font-bold">Volver al menú</h1>
+                 {isCreatorPro && (
+                   <>
+                     <button onClick={() => setMode('landing')} className="mr-4 text-gray-600 hover:text-gray-900">
+                         <ArrowLeft className="h-6 w-6" />
+                     </button>
+                     <h1 className="text-xl font-bold">Volver al menú</h1>
+                   </>
+                 )}
+                 {!isCreatorPro && (
+                   <>
+                     <button onClick={() => navigate('/')} className="mr-4 text-gray-600 hover:text-gray-900">
+                         <ArrowLeft className="h-6 w-6" />
+                     </button>
+                     <h1 className="text-xl font-bold">Volver al inicio</h1>
+                   </>
+                 )}
              </div>
-             <JukeboxPage event={event} />
+             <JukeboxPage event={event} creatorProfile={creatorProfile} />
           </div>
       )
   }
@@ -250,11 +294,11 @@ const EventPage = () =>{
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
-              onClick={() => jukeboxActive ? setMode('landing') : navigate('/')}
+              onClick={() => (jukeboxActive && isCreatorPro) ? setMode('landing') : navigate('/')}
               className="flex items-center text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
-              {jukeboxActive ? 'Volver al menú' : 'Volver al inicio'}
+              {(jukeboxActive && isCreatorPro) ? 'Volver al menú' : 'Volver al inicio'}
             </button>
             
             <div className="flex items-center space-x-4">
@@ -344,6 +388,18 @@ const EventPage = () =>{
       <div className="bg-blue-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {/* White-label branding: show DJ logo if enabled, otherwise EventSnaps logo */}
+              {branding.showDJLogo && branding.logoUrl ? (
+                <img
+                  src={branding.logoUrl}
+                  alt={branding.djName ?? 'DJ Logo'}
+                  className="h-10 w-auto object-contain rounded"
+                />
+              ) : (
+                <span className="text-lg font-extrabold tracking-tight">EventSnaps</span>
+              )}
+            </div>
             <div>
               <h1 className="text-2xl font-bold">Código del evento</h1>
               <p className="text-blue-100">Comparte este código para unirte</p>
@@ -465,6 +521,7 @@ const EventPage = () =>{
 function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { photo: Photo, selectionEnabled?: boolean, selected?: boolean, onToggleSelect?: () => void }) {
   const [imageUrl, setImageUrl] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const { showAlert } = useAlert()
 
   useEffect(() => {
     const loadImage = async () => {
@@ -543,7 +600,7 @@ function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { phot
                 document.body.removeChild(a)
                 URL.revokeObjectURL(url)
               } catch {
-                alert('No se pudo descargar la foto. Intenta nuevamente.')
+                showAlert('No se pudo descargar la foto. Intenta nuevamente.', 'Error')
               }
             }}
             className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm"

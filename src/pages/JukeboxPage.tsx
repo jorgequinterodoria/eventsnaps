@@ -8,13 +8,16 @@ import { useInsforgeRealtime } from '@/hooks/useInsforgeRealtime'
 import WaveVisualizer from '@/components/WaveVisualizer'
 import QueueAnalytics from '@/components/QueueAnalytics'
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from '@/lib/music-provider'
+import { useAlert } from '@/contexts/AlertContext'
 
 interface JukeboxPageProps {
   event: Event
+  creatorProfile?: any
 }
 
-export default function JukeboxPage({ event }: JukeboxPageProps) {
+export default function JukeboxPage({ event, creatorProfile }: JukeboxPageProps) {
   const [query, setQuery] = useState('')
+  const { showAlert } = useAlert()
   const [results, setResults] = useState<Track[]>([])
   const [queue, setQueue] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -116,7 +119,7 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
       (provider === 'spotify' && q.title.toLowerCase().trim() === track.title.toLowerCase().trim() && q.artist.toLowerCase().trim() === track.artist.toLowerCase().trim())
     )
     if (existing) {
-      alert('Esta canción ya está en la cola')
+      showAlert('Esta canción ya está en la cola')
       return
     }
 
@@ -185,7 +188,7 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
             }
             return q
         }).sort((a, b) => b.votes - a.votes))
-        alert('Error al actualizar el voto')
+        showAlert('Error al actualizar el voto', 'Error')
     }
     emit('queue:updated', { eventId: event.id })
   }
@@ -236,11 +239,11 @@ export default function JukeboxPage({ event }: JukeboxPageProps) {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
         <h2 className="text-2xl font-bold flex items-center">
           {provider === 'youtube' ? <Youtube className="mr-2 text-red-600"/> : <Music className="mr-2 text-green-600"/>} 
-          Playlist
+          Playlist {creatorProfile?.full_name ? `de ${creatorProfile.full_name}` : ''}
         </h2>
         <h3 className="text-lg font-semibold flex items-center text-gray-700">
-          <a href="https://www.instagram.com/jorgequinterodj/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-pink-600 transition-colors">
-            <Instagram className="mr-2 text-pink-600"/> @jorgequinterodj
+          <a href={`https://www.instagram.com/${creatorProfile?.instagram_username || 'jorgequinterodj'}/`} target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-pink-600 transition-colors">
+            <Instagram className="mr-2 text-pink-600"/> @{creatorProfile?.instagram_username || 'jorgequinterodj'}
           </a>
         </h3>
       </div>

@@ -5,8 +5,10 @@ import EventPage from "@/pages/EventPage"
 import CreateEvent from "@/pages/CreateEvent";
 import JoinEvent from "@/pages/JoinEvent";
 import ModerationPage from "@/pages/ModerationPage";
-import AdminLogin from "@/pages/AdminLogin";
+import AuthPage from "@/pages/AuthPage";
 import AdminDashboard from "@/pages/AdminDashboard";
+import PricingPage from "@/pages/PricingPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 export default function App() {
   return (
@@ -19,7 +21,18 @@ export default function App() {
               <Home />
             </>
           } />
-          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/auth" element={
+            <>
+              <Navigation />
+              <AuthPage />
+            </>
+          } />
+          <Route path="/pricing" element={
+            <>
+              <Navigation />
+              <PricingPage />
+            </>
+          } />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/create" element={
             <>
@@ -43,6 +56,12 @@ export default function App() {
             <>
               <Navigation />
               <ModerationPage />
+            </>
+          } />
+          <Route path="/profile" element={
+            <>
+              <Navigation />
+              <ProfilePage />
             </>
           } />
         </Routes>

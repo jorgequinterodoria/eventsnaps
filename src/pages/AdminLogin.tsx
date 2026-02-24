@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
+import { useAlert } from '@/contexts/AlertContext'
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('')
+  const { showAlert } = useAlert()
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
@@ -13,7 +15,7 @@ const AdminLogin = () => {
       localStorage.setItem('admin_token', 'super_secret_token')
       navigate('/admin/dashboard')
     } else {
-      alert('Credenciales inválidas')
+      showAlert('Credenciales inválidas', 'Error')
     }
   }
 

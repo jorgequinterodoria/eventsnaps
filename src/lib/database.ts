@@ -127,8 +127,8 @@ export async function getModerationQueue(eventId: string): Promise<ModerationQue
   return (data as ModerationQueueItem[]) || []
 }
 
-export async function moderatePhoto(photoId: string, action: 'approve' | 'reject', reason?: string) {
-  const moderatorId = 'anonymous'
+export async function moderatePhoto(photoId: string, action: 'approve' | 'reject', reason?: string, moderatorId?: string) {
+  const resolvedModeratorId = moderatorId || 'anonymous'
 
   // Update photo status
   const { error: photoError } = await insforge.database
@@ -149,7 +149,7 @@ export async function moderatePhoto(photoId: string, action: 'approve' | 'reject
     .from('moderation_actions')
     .insert({
       photo_id: photoId,
-      moderator_id: moderatorId,
+      moderator_id: resolvedModeratorId,
       action,
       reason: reason || null
     })
@@ -159,12 +159,17 @@ export async function moderatePhoto(photoId: string, action: 'approve' | 'reject
 
 export async function setModerationAISuggestion(
   queueId: string,
-  suggestion: 'approve' | 'reject',
-  confidence: number
+  suggestion: 'approve' | 'reject' | null,
+  confidence: number,
+  errorMessage?: string
 ) {
   const { error } = await insforge.database
     .from('moderation_queues')
-    .update({ gemini_suggestion: suggestion, confidence_score: confidence })
+    .update({
+      gemini_suggestion: suggestion,
+      confidence_score: confidence,
+      error_message: errorMessage || null
+    })
     .eq('id', queueId)
   if (error) throw error
 }

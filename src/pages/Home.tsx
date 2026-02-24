@@ -1,12 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, Users, Clock, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Footer from '@/components/Footer'
+import { insforge } from '@/lib/insforge'
 
 const Home = () => {
   const navigate = useNavigate()
   const [joinCode, setJoinCode] = useState('')
+  const [session, setSession] = useState<any>(null)
+
+  useEffect(() => {
+    insforge.auth.getCurrentSession().then(({ data }) => {
+      setSession(data.session)
+    }).catch(console.error)
+  }, [])
 
   const handleJoinEvent = (e: React.FormEvent) => {
     e.preventDefault()
@@ -116,7 +124,7 @@ const Home = () => {
                 Crea un nuevo espacio para compartir fotos de tu evento. Elige la duración y las opciones de moderación.
               </p>
               <button
-                onClick={() => navigate('/create')}
+                onClick={() => navigate(session ? '/create' : '/auth')}
                 className={cn(
                   "mt-6 w-full inline-flex items-center justify-center px-6 py-3",
                   "border border-transparent text-base font-medium rounded-md",
@@ -124,7 +132,7 @@ const Home = () => {
                   "transition-colors duration-200"
                 )}
               >
-                Crear Evento
+                {session ? 'Crear Evento' : 'Inicia sesión para crear'}
               </button>
             </div>
 

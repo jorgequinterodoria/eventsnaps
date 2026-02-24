@@ -7,39 +7,98 @@ import { analyzePhotoForModeration } from '@/lib/gemini'
 import { getPhotoUrl } from '@/lib/database'
 import type { Event as EventType } from '@/lib/insforge'
 import Footer from '@/components/Footer'
+import { useAlert } from '@/contexts/AlertContext'
+import { insforge } from '@/lib/insforge'
 
-const ModerationPage= () =>{
+const AUTO_APPROVE_THRESHOLD = 0.9
+
+const ModerationPage = () => {
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
+  const { showAlert } = useAlert()
   const [event, setEvent] = useState<EventType | null>(null)
   const [queue, setQueue] = useState<import('@/lib/database').ModerationQueueItem[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const loadModerationData = useCallback(async () => {
     if (!code) return
 
     try {
+      // ── Auth guard ──────────────────────────────────────────────────────────
+      const { data: sessionData } = await insforge.auth.getCurrentSession()
+      if (!sessionData?.session) {
+        showAlert('Debes iniciar sesión para moderar fotos.', 'Sin acceso')
+        navigate('/auth')
+        return
+      }
+      const userId = sessionData.session.user.id
+      setCurrentUserId(userId)
+
       const eventData = await getEventByCode(code.toUpperCase())
       if (!eventData) {
         navigate('/')
         return
       }
+
+      // Only event creator or admin can moderate
+      const { data: profile } = await insforge.database
+        .from('user_profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
+
+      const isCreator = eventData.creator_id === userId
+      const isAdmin   = profile?.role === 'admin'
+
+      if (!isCreator && !isAdmin) {
+        showAlert('No tienes permiso para moderar este evento.', 'Sin acceso')
+        navigate(`/event/${code}`)
+        return
+      }
+
       setEvent(eventData)
 
       const queueData = await getModerationQueue(eventData.id)
       setQueue(queueData)
 
+      // Run Gemini analysis for items not yet analyzed
       for (const item of queueData) {
         if (!item.gemini_suggestion && item.photos) {
           try {
             const analysis = await analyzePhotoForModeration(item.photo_id, item.photos.storage_path)
-            item.gemini_suggestion = analysis.suggestion
-            item.confidence_score = analysis.confidence
-            await setModerationAISuggestion(item.id, analysis.suggestion, analysis.confidence)
-            const AUTO_APPROVE_THRESHOLD = 0.9
-            if (analysis.suggestion === 'reject' || (analysis.suggestion === 'approve' && analysis.confidence >= AUTO_APPROVE_THRESHOLD)) {
-              setQueue((prev) => prev.filter(q => q.photo_id !== item.photo_id))
+            // Persist AI suggestion and potential exact error message
+            await setModerationAISuggestion(item.id, analysis.suggestion, analysis.confidence, analysis.errorMessage)
+
+            // Update local state to show the badge
+            setQueue(prev => prev.map(q =>
+              q.id === item.id
+                ? { 
+                    ...q, 
+                    gemini_suggestion: analysis.suggestion, 
+                    confidence_score: analysis.confidence,
+                    error_message: analysis.errorMessage 
+                  }
+                : q
+            ))
+
+            // ── Auto-action: high-confidence approve or any reject ────────────
+            if (analysis.suggestion) {
+              const shouldAutoAction =
+                analysis.suggestion === 'reject' ||
+                (analysis.suggestion === 'approve' && analysis.confidence >= AUTO_APPROVE_THRESHOLD)
+
+              if (shouldAutoAction) {
+                // Actually persist to DB, not just remove from local state
+                await moderatePhoto(
+                  item.photo_id,
+                  analysis.suggestion,
+                  `IA Gemini (confianza: ${Math.round(analysis.confidence * 100)}%)`,
+                  'gemini-auto'
+                )
+                setQueue(prev => prev.filter(q => q.photo_id !== item.photo_id))
+              }
             }
           } catch (error) {
             console.error('Failed to analyze photo:', error)
@@ -51,7 +110,7 @@ const ModerationPage= () =>{
     } finally {
       setLoading(false)
     }
-  }, [code, navigate])
+  }, [code, navigate, showAlert])
 
   useEffect(() => {
     loadModerationData()
@@ -60,11 +119,11 @@ const ModerationPage= () =>{
   const handleModerate = async (photoId: string, action: 'approve' | 'reject', reason?: string) => {
     setProcessing(photoId)
     try {
-      await moderatePhoto(photoId, action, reason)
+      await moderatePhoto(photoId, action, reason, currentUserId ?? undefined)
       setQueue(queue.filter(item => item.photo_id !== photoId))
     } catch (error) {
       console.error('Failed to moderate photo:', error)
-      alert('Error al moderar la foto. Inténtalo de nuevo.')
+      showAlert('Error al moderar la foto. Inténtalo de nuevo.', 'Error')
     } finally {
       setProcessing(null)
     }
@@ -122,8 +181,8 @@ const ModerationPage= () =>{
         {queue.length === 0 ? (
           <div className="text-center py-12">
             <Shield className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Todo en orden!</h2>
-            <p className="text-gray-600">No hay fotos pendientes de moderación. ¡Bien hecho!</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Todo en orden!</h2>
+            <p className="text-gray-600">No hay fotos pendientes de moderación.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -153,7 +212,7 @@ function ModerationCard({
   processing: boolean
 }) {
   const [imageUrl, setImageUrl] = useState<string>('')
-  const [loading, setLoading] = useState(true)
+  const [imgLoading, setImgLoading] = useState(true)
   const [showRejectReason, setShowRejectReason] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
 
@@ -166,7 +225,7 @@ function ModerationCard({
         } catch (error) {
           console.error('Failed to load photo:', error)
         } finally {
-          setLoading(false)
+          setImgLoading(false)
         }
       }
     }
@@ -174,9 +233,8 @@ function ModerationCard({
   }, [item.photos])
 
   const handleReject = () => {
-    if (rejectReason.trim()) {
-      onModerate(item.photo_id, 'reject', rejectReason)
-    }
+    // Reason is now optional
+    onModerate(item.photo_id, 'reject', rejectReason.trim() || undefined)
   }
 
   const geminiConfidence = item.confidence_score ? Math.round(item.confidence_score * 100) : null
@@ -185,7 +243,7 @@ function ModerationCard({
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Image */}
       <div className="aspect-square bg-gray-200 relative">
-        {loading ? (
+        {imgLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
@@ -207,7 +265,7 @@ function ModerationCard({
           )}>
             <div className="flex items-center">
               <Shield className="h-3 w-3 mr-1" />
-              AI: {item.gemini_suggestion}
+              IA: {item.gemini_suggestion === 'approve' ? '✅ aprobar' : '❌ rechazar'}
               {geminiConfidence && (
                 <span className="ml-1">({geminiConfidence}%)</span>
               )}
@@ -220,12 +278,12 @@ function ModerationCard({
       <div className="p-4">
         <div className="flex items-center text-sm text-gray-600 mb-3">
           <Clock className="h-4 w-4 mr-1" />
-          Queued: {new Date(item.queued_at).toLocaleString()}
+          {new Date(item.queued_at).toLocaleString('es-CO')}
         </div>
         
         {item.photos?.caption && (
           <p className="text-sm text-gray-700 mb-4">
-            <strong>Caption:</strong> {item.photos.caption}
+            <strong>Pie de foto:</strong> {item.photos.caption}
           </p>
         )}
 
@@ -242,7 +300,7 @@ function ModerationCard({
               )}
             >
               <Check className="h-4 w-4 mr-2" />
-              Approve
+              Aprobar
             </button>
             
             <button
@@ -255,7 +313,7 @@ function ModerationCard({
               )}
             >
               <X className="h-4 w-4 mr-2" />
-              Reject
+              Rechazar
             </button>
           </div>
         ) : (
@@ -263,15 +321,15 @@ function ModerationCard({
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Enter reason for rejection..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              rows={3}
+              placeholder="Razón del rechazo (opcional)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+              rows={2}
             />
             
             <div className="flex space-x-3">
               <button
                 onClick={handleReject}
-                disabled={processing || !rejectReason.trim()}
+                disabled={processing}
                 className={cn(
                   "flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md",
                   "text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500",
@@ -279,7 +337,7 @@ function ModerationCard({
                 )}
               >
                 <X className="h-4 w-4 mr-2" />
-                Confirm Reject
+                Confirmar rechazo
               </button>
               
               <button
@@ -294,7 +352,7 @@ function ModerationCard({
                   "disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 )}
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </div>

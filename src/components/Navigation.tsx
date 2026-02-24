@@ -1,16 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X, Home, Plus, User } from 'lucide-react'
+import { Menu, X, Home, Plus, User, LogIn, LogOut, LayoutDashboard, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { insforge } from '@/lib/insforge'
 
 const Navigation = () =>{
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [session, setSession] = useState<any>(null)
+
+  useEffect(() => {
+    insforge.auth.getCurrentSession().then(({ data }) => {
+      setSession(data.session)
+    }).catch(console.error)
+  }, [])
+
+  const handleLogout = async () => {
+    await insforge.auth.signOut()
+    window.location.href = '/'
+  }
 
   const navItems = [
-    { name: 'Inicio', href: '/', icon: Home },
-    { name: 'Crear Evento', href: '/create', icon: Plus },
-    { name: 'Unirse a Evento', href: '/join', icon: User },
+    { name: 'Inicio', href: '/', icon: Home, showAlways: true },
+    { name: 'Crear Evento', href: '/create', icon: Plus, requiresAuth: true },
+    { name: 'Unirse a Evento', href: '/join', icon: User, showAlways: true },
+    { name: 'Planes', href: '/pricing', icon: Crown, showAlways: true },
+    { name: 'Mi Perfil', href: '/profile', icon: User, requiresAuth: true },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, requiresAuth: true },
   ]
 
   return (
@@ -29,7 +45,7 @@ const Navigation = () =>{
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
+            {navItems.filter(item => item.showAlways || (item.requiresAuth && session)).map((item) => {
               const Icon = item.icon
               return (
                 <button
@@ -42,6 +58,24 @@ const Navigation = () =>{
                 </button>
               )
             })}
+            
+            {session ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Salir
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/auth')}
+                className="flex items-center text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Ingresar
+              </button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -63,7 +97,7 @@ const Navigation = () =>{
       {/* Mobile Navigation */}
       <div className={cn("md:hidden", isMenuOpen ? "block" : "hidden")}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-          {navItems.map((item) => {
+          {navItems.filter(item => item.showAlways || (item.requiresAuth && session)).map((item) => {
             const Icon = item.icon
             return (
               <button
@@ -79,6 +113,29 @@ const Navigation = () =>{
               </button>
             )
           })}
+          {session ? (
+            <button
+              onClick={() => {
+                handleLogout()
+                setIsMenuOpen(false)
+              }}
+              className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="h-5 w-5 mr-3" />
+              Salir
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                navigate('/auth')
+                setIsMenuOpen(false)
+              }}
+              className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+            >
+              <LogIn className="h-5 w-5 mr-3" />
+              Ingresar
+            </button>
+          )}
         </div>
       </div>
     </nav>

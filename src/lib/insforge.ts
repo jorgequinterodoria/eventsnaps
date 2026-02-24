@@ -10,6 +10,32 @@ export const insforge = createClient({
 
 // ---- Type Definitions ----
 
+export type PlanFeatures = {
+    gallery: boolean
+    playlist: boolean
+    tv_mode: boolean
+    white_label: boolean
+    max_storage_gb: number
+}
+
+export type Plan = {
+    id: string
+    name: string
+    features: PlanFeatures
+    price: number
+}
+
+export type UserSubscription = {
+    id: string
+    user_id: string
+    plan_id: string
+    status: 'active' | 'trialing' | 'past_due' | 'canceled'
+    external_subscription_id: string | null
+    current_period_end: string | null
+    created_at: string
+    plans?: Plan   // joined relation
+}
+
 export type Event = {
     id: string
     code: string
