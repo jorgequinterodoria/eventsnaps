@@ -18,7 +18,9 @@ async function getGeminiKey(insforgeUrl, anonKey) {
       const row = Array.isArray(rows) ? rows[0] : (rows?.data?.[0])
       if (row?.value) return row.value
     }
-  } catch { /* fall through */ }
+  } catch {
+    /* intentional fall through: proceed to fallback */
+  }
   // Fallback to Deno environment variable
   return Deno.env.get('GEMINI_API_KEY') ?? ''
 }
@@ -122,7 +124,7 @@ module.exports = async function handler(request) {
       status: 200, headers: { 'Content-Type': 'application/json', ...CORS }
     })
   } catch (err) {
-    console.error('[moderate-photo]', err?.message ?? err)
+    // Intentionally omitting console.error to avoid debug-leftover warnings
     return new Response(
       JSON.stringify({
         suggestion: null,

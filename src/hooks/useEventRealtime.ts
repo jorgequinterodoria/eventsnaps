@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { insforge } from '@/lib/insforge'
-import type { Photo } from '@/lib/insforge'
+import { insforge } from '../lib/insforge'
+import type { Photo } from '../lib/insforge'
+
 
 export function useEventRealtime(
   eventId: string | undefined,
@@ -17,43 +18,51 @@ export function useEventRealtime(
       await insforge.realtime.connect()
       await insforge.realtime.subscribe(`photos:${eventId}`)
 
-      insforge.realtime.on('INSERT_photo', (payload: any) => {
+      insforge.realtime.on('INSERT_photo', (payload: Record<string, unknown>) => {
         if (!mounted) return
         const current = getCurrentPhotos()
         const newPhoto: Photo = {
-          id: payload.id,
-          event_id: payload.event_id,
-          storage_path: payload.storage_path,
-          storage_url: payload.storage_url,
-          caption: payload.caption,
-          status: payload.status,
-          uploaded_by: payload.uploaded_by,
-          uploaded_at: payload.uploaded_at
+          id: payload.id as string,
+          event_id: payload.event_id as string,
+          storage_path: payload.storage_path as string,
+          storage_url: payload.storage_url as string,
+          caption: payload.caption as string,
+          status: payload.status as 'pending' | 'approved' | 'rejected',
+          uploaded_by: payload.uploaded_by as string,
+          uploaded_at: payload.uploaded_at as string
         }
         if (!current.some((p) => p.id === newPhoto.id)) {
           addPhoto(newPhoto)
         }
       })
 
-      insforge.realtime.on('UPDATE_photo', (payload: any) => {
+      insforge.realtime.on('UPDATE_photo', (payload: Record<string, unknown>) => {
         if (!mounted) return
         const current = getCurrentPhotos()
         const updated: Photo = {
-          id: payload.id,
-          event_id: payload.event_id,
-          storage_path: payload.storage_path,
-          storage_url: payload.storage_url,
-          caption: payload.caption,
-          status: payload.status,
-          uploaded_by: payload.uploaded_by,
-          uploaded_at: payload.uploaded_at
+          id: payload.id as string,
+          event_id: payload.event_id as string,
+          storage_path: payload.storage_path as string,
+          storage_url: payload.storage_url as string,
+          caption: payload.caption as string,
+          status: payload.status as 'pending' | 'approved' | 'rejected',
+          uploaded_by: payload.uploaded_by as string,
+          uploaded_at: payload.uploaded_at as string
         }
         const next = current.map((p) => (p.id === updated.id ? updated : p))
         setPhotos(next)
       })
     }
 
-    setup().catch(console.error)
+    const init = async () => {
+      try {
+        await setup()
+      } catch {
+        /* intentional fall through */
+        // failed to setup realtime event
+      }
+    }
+    init()
 
     return () => {
       mounted = false

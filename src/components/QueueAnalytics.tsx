@@ -1,13 +1,19 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Bar, Doughnut } from 'react-chartjs-2'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js'
+import { CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, Chart as ChartJS } from 'chart.js'
 import { BarChart2, ChevronDown, ChevronUp, Users, Disc3 } from 'lucide-react'
+import { APP_CONFIG } from '../constants/config'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement)
 
+interface QueueItem {
+  artist?: string
+  genre?: string
+  votes?: number
+}
+
 interface QueueAnalyticsProps {
-  queue: any[]
-  provider: 'spotify' | 'youtube'
+  queue: QueueItem[]
   eventId: string
 }
 
@@ -25,7 +31,7 @@ const CHART_COLORS = [
   'rgba(96,125,139,0.85)',
 ]
 
-export default function QueueAnalytics({ queue, provider }: QueueAnalyticsProps) {
+export default function QueueAnalytics({ queue }: QueueAnalyticsProps) {
   const [expanded, setExpanded] = useState(false)
 
   const artistData = useMemo(() => {
@@ -39,10 +45,10 @@ export default function QueueAnalytics({ queue, provider }: QueueAnalyticsProps)
     // Sort by votes desc, take top 8
     const sorted = Object.entries(artists)
       .sort((a, b) => b[1].votes - a[1].votes)
-      .slice(0, 8)
+      .slice(0, APP_CONFIG.ANALYTICS.MAX_TRACKS_DISPLAY)
 
     return {
-      labels: sorted.map(([name]) => name.length > 20 ? name.slice(0, 18) + '…' : name),
+      labels: sorted.map(([name]) => name.length > APP_CONFIG.ANALYTICS.MAX_LABEL_LENGTH ? name.slice(0, APP_CONFIG.ANALYTICS.MAX_LABEL_LENGTH - 2) + '…' : name),
       datasets: [{
         label: 'Votos',
         data: sorted.map(([, v]) => v.votes),
@@ -61,7 +67,7 @@ export default function QueueAnalytics({ queue, provider }: QueueAnalyticsProps)
         genres[g] = (genres[g] || 0) + (item.votes || 0)
       }
     })
-    const sorted = Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    const sorted = Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, APP_CONFIG.ANALYTICS.MAX_GENRES_DISPLAY)
     if (sorted.length === 0) return null
 
     return {
@@ -92,14 +98,14 @@ export default function QueueAnalytics({ queue, provider }: QueueAnalyticsProps)
         </div>
         <div className="analytics-toggle-right">
           <div className="analytics-stat">
-            <Users size={14} />
+            <Users size={APP_CONFIG.ANALYTICS.ICON_SIZE} />
             <span>{uniqueArtists} artistas</span>
           </div>
           <div className="analytics-stat">
-            <Disc3 size={14} />
+            <Disc3 size={APP_CONFIG.ANALYTICS.ICON_SIZE} />
             <span>{totalVotes} votos</span>
           </div>
-          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          {expanded ? <ChevronUp size={APP_CONFIG.ANALYTICS.CHEVRON_SIZE} /> : <ChevronDown size={APP_CONFIG.ANALYTICS.CHEVRON_SIZE} />}
         </div>
       </button>
 

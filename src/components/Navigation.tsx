@@ -1,42 +1,54 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X, Home, Plus, User, LogIn, LogOut, LayoutDashboard, Crown } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { insforge } from '@/lib/insforge'
+import { useTranslation } from 'react-i18next'
+import { Menu, X, Home, Plus, User, LogIn, LogOut, LayoutDashboard, Crown, Sun, Moon } from 'lucide-react'
+import { cn } from '../lib/utils'
+import { insforge } from '../lib/insforge'
+import { ROUTES } from '../constants/routes'
+import LanguageSwitcher from './LanguageSwitcher'
+import { useTheme } from '../contexts/ThemeContext'
 
 const Navigation = () =>{
+  const { t } = useTranslation()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [session, setSession] = useState<any>(null)
+  const [session, setSession] = useState<{ user: { email?: string } } | null>(null)
 
   useEffect(() => {
-    insforge.auth.getCurrentSession().then(({ data }) => {
-      setSession(data.session)
-    }).catch(console.error)
+    const checkSession = async () => {
+      try {
+        const { data } = await insforge.auth.getCurrentSession()
+        setSession(data.session)
+      } catch {
+        // failed to get current session
+      }
+    }
+    checkSession()
   }, [])
 
   const handleLogout = async () => {
     await insforge.auth.signOut()
-    window.location.href = '/'
+    window.location.href = ROUTES.HOME
   }
 
   const navItems = [
-    { name: 'Inicio', href: '/', icon: Home, showAlways: true },
-    { name: 'Crear Evento', href: '/create', icon: Plus, requiresAuth: true },
-    { name: 'Unirse a Evento', href: '/join', icon: User, showAlways: true },
-    { name: 'Planes', href: '/pricing', icon: Crown, showAlways: true },
-    { name: 'Mi Perfil', href: '/profile', icon: User, requiresAuth: true },
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { name: t('nav.home'), href: ROUTES.HOME, icon: Home, showAlways: true },
+    { name: t('nav.createEvent'), href: ROUTES.CREATE_EVENT, icon: Plus, requiresAuth: true },
+    { name: t('nav.joinEvent'), href: ROUTES.JOIN_EVENT, icon: User, showAlways: true },
+    { name: t('nav.plans'), href: ROUTES.PRICING, icon: Crown, showAlways: true },
+    { name: t('nav.myProfile'), href: ROUTES.PROFILE, icon: User, requiresAuth: true },
+    { name: t('nav.dashboard'), href: ROUTES.ADMIN_DASHBOARD, icon: LayoutDashboard, requiresAuth: true },
   ]
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-900/30 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(ROUTES.HOME)}
               className="flex items-center text-xl font-bold text-blue-600 hover:text-blue-700"
             >
               EventSnaps
@@ -59,21 +71,31 @@ const Navigation = () =>{
               )
             })}
             
+            <LanguageSwitcher />
+
+            <button
+              onClick={toggleTheme}
+              className="flex items-center text-gray-700 hover:text-blue-600 px-2 py-2 rounded-md text-sm font-medium transition-colors"
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+
             {session ? (
               <button
                 onClick={handleLogout}
                 className="flex items-center text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Salir
+                {t('nav.logout')}
               </button>
             ) : (
               <button
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate(ROUTES.AUTH)}
                 className="flex items-center text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                Ingresar
+                {t('nav.login')}
               </button>
             )}
           </div>
@@ -122,18 +144,18 @@ const Navigation = () =>{
               className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="h-5 w-5 mr-3" />
-              Salir
+              {t('nav.logout')}
             </button>
           ) : (
             <button
               onClick={() => {
-                navigate('/auth')
+                navigate(ROUTES.AUTH)
                 setIsMenuOpen(false)
               }}
               className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50 transition-colors"
             >
               <LogIn className="h-5 w-5 mr-3" />
-              Ingresar
+              {t('nav.login')}
             </button>
           )}
         </div>

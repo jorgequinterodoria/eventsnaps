@@ -1,64 +1,65 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navigation from "@/components/Navigation";
-import Home from "@/pages/Home";
-import EventPage from "@/pages/EventPage"
-import CreateEvent from "@/pages/CreateEvent";
-import JoinEvent from "@/pages/JoinEvent";
-import ModerationPage from "@/pages/ModerationPage";
-import AuthPage from "@/pages/AuthPage";
-import AdminDashboard from "@/pages/AdminDashboard";
-import PricingPage from "@/pages/PricingPage";
-import ProfilePage from "@/pages/ProfilePage";
+import Navigation from './components/Navigation';
+import Home from './pages/Home';
+import EventPage from './pages/EventPage'
+import CreateEvent from './pages/CreateEvent';
+import JoinEvent from './pages/JoinEvent';
+import ModerationPage from './pages/ModerationPage';
+import AuthPage from './pages/AuthPage';
+import AdminDashboard from './pages/AdminDashboard';
+import PricingPage from './pages/PricingPage';
+import ProfilePage from './pages/ProfilePage';
+import { ROUTES } from './constants/routes';
 
 export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Routes>
-          <Route path="/" element={
+          <Route path={ROUTES.HOME} element={
             <>
               <Navigation />
               <Home />
             </>
           } />
-          <Route path="/auth" element={
+          <Route path={ROUTES.AUTH} element={
             <>
               <Navigation />
               <AuthPage />
             </>
           } />
-          <Route path="/pricing" element={
+          <Route path={ROUTES.PRICING} element={
             <>
               <Navigation />
               <PricingPage />
             </>
           } />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/create" element={
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
+          <Route path={ROUTES.CREATE_EVENT} element={
             <>
               <Navigation />
               <CreateEvent />
             </>
           } />
-          <Route path="/join" element={
+          <Route path={ROUTES.JOIN_EVENT} element={
             <>
               <Navigation />
               <JoinEvent />
             </>
           } />
-          <Route path="/event/:code" element={
+          <Route path={ROUTES.EVENT_DETAIL} element={
             <>
               <Navigation />
               <EventPage />
             </>
           } />
-          <Route path="/moderate/:code" element={
+          <Route path={ROUTES.MODERATE_EVENT} element={
             <>
               <Navigation />
               <ModerationPage />
             </>
           } />
-          <Route path="/profile" element={
+          <Route path={ROUTES.PROFILE} element={
             <>
               <Navigation />
               <ProfilePage />

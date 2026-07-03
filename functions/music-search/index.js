@@ -1,21 +1,133 @@
 import { createClient } from 'npm:@insforge/sdk';
 
-export default async function(req) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
-  };
+const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
+const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
+};
+
+async function getSpotifyToken(clientId, clientSecret) {
+  const authString = btoa(`${clientId}:${clientSecret}`);
+  const response = await fetch(SPOTIFY_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${authString}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error_description || 'Failed to get Spotify token');
+  }
+  return data.access_token;
+}
+
+async function handleYoutubeSearch(query, apiKey) {
+  if (!apiKey) return { status: 400, data: { error: 'YouTube API Key not configured' } };
+  if (!query) return { status: 400, data: { error: 'Query is required' } };
+
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=10`
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    return { status: res.status, data: { error: data.error?.message || 'YouTube search failed' } };
+  }
+
+  const tracks = data.items.map((item) => ({
+    id: item.id.videoId,
+    title: item.snippet.title,
+    artist: item.snippet.channelTitle,
+    album_art: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url || null,
+    preview_url: null,
+    provider: 'youtube',
+  }));
+
+  return { status: 200, data: { tracks } };
+}
+
+async function handleSpotifySearch(query, clientId, clientSecret) {
+  if (!clientId || !clientSecret) {
+    return { status: 400, data: { error: 'Spotify credentials not configured.' } };
+  }
+  if (!query) return { status: 400, data: { error: 'Query is required' } };
+
+  try {
+    const token = await getSpotifyToken(clientId, clientSecret);
+    const searchRes = await fetch(
+      `${SPOTIFY_API_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=10`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const searchData = await searchRes.json();
+    if (!searchRes.ok) {
+      return { status: searchRes.status, data: { error: searchData.error?.message || 'Spotify search failed' } };
+    }
+
+    const tracks = searchData.tracks.items.map((track) => ({
+      id: track.id,
+      title: track.name,
+      artist: track.artists.map(a => a.name).join(', '),
+      album_art: track.album.images?.[0]?.url || null,
+      preview_url: track.preview_url || null,
+      provider: 'spotify',
+    }));
+    return { status: 200, data: { tracks } };
+  } catch (error) {
+    return { status: 500, data: { error: error.message } };
+  }
+}
+
+async function getArtistGenres(artists, clientId, clientSecret) {
+  if (!clientId || !clientSecret || !Array.isArray(artists) || artists.length === 0) {
+    return { status: 200, data: { genres: {} } };
+  }
+
+  try {
+    const token = await getSpotifyToken(clientId, clientSecret);
+    const genresByArtist = {};
+    const targetArtists = [...new Set(artists)].slice(0, 5); // Deduplicate and limit
+    
+    for (const artistName of targetArtists) {
+      try {
+        const searchRes = await fetch(
+          `${SPOTIFY_API_BASE}/search?q=${encodeURIComponent('artist:' + artistName)}&type=artist&limit=1`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (searchRes.ok) {
+           const searchData = await searchRes.json();
+           const foundArtist = searchData.artists?.items?.[0];
+           genresByArtist[artistName] = foundArtist && foundArtist.genres?.length > 0
+             ? foundArtist.genres[0]
+             : 'unknown';
+        }
+      } catch (e) {
+        /* intentional fall through: skip failed artist lookup */
+      }
+    }
+    return { status: 200, data: { genres: genresByArtist } };
+  } catch (error) {
+    return { status: 200, data: { genres: {} } }; // Fail gracefully on token error
+  }
+}
+
+export default async function(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
+    let body = {};
+    try {
+      body = await req.json();
+    } catch {
+      /* intentional fall through wrapper */
+    }
     const { action, query, artists } = body;
 
-    // Get Spotify credentials from admin_config table
     const client = createClient({
       baseUrl: Deno.env.get('INSFORGE_BASE_URL'),
       anonKey: Deno.env.get('ANON_KEY'),
@@ -26,215 +138,35 @@ export default async function(req) {
       .select('key, value')
       .in('key', ['spotify_client_id', 'spotify_client_secret', 'youtube_api_key']);
 
-    if (configError || !config) {
-      throw new Error('Could not load configuration');
-    }
+    if (configError || !config) throw new Error('Could not load configuration');
 
-    // --- YouTube Search ---
-    if (action === 'search_youtube') {
-      const apiKey = config.find(c => c.key === 'youtube_api_key')?.value;
-      if (!apiKey) {
-        return new Response(JSON.stringify({ error: 'YouTube API Key not configured' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (!query) {
-        return new Response(JSON.stringify({ error: 'Query is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=10`
-      );
-      const data = await res.json();
-
-      if (!res.ok) {
-        return new Response(JSON.stringify({ error: data.error?.message || 'YouTube search failed' }), {
-          status: res.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const tracks = data.items.map((item) => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        artist: item.snippet.channelTitle,
-        album_art: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url || null,
-        preview_url: null,
-        provider: 'youtube',
-      }));
-
-      return new Response(JSON.stringify({ tracks }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // --- Spotify Search ---
-    if (action === 'search_spotify') {
-      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;
-      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;
-
-      if (!clientId || !clientSecret) {
-        return new Response(JSON.stringify({ error: 'Spotify credentials not configured. Add them in Admin Dashboard.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (!query) {
-        return new Response(JSON.stringify({ error: 'Query is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // 1. Get access token using Client Credentials flow
-      const authString = btoa(`${clientId}:${clientSecret}`);
-      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${authString}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'grant_type=client_credentials',
-      });
-
-      const tokenData = await tokenRes.json();
-      if (!tokenRes.ok) {
-        return new Response(
-          JSON.stringify({ error: tokenData.error_description || 'Failed to get Spotify token' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // 2. Search Spotify tracks
-      const searchRes = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`,
-        {
-          headers: { Authorization: `Bearer ${tokenData.access_token}` },
-        }
-      );
-
-      const searchData = await searchRes.json();
-      if (!searchRes.ok) {
-        return new Response(
-          JSON.stringify({ error: searchData.error?.message || 'Spotify search failed' }),
-          { status: searchRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const tracks = searchData.tracks.items.map((track) => ({
-        id: track.id,
-        title: track.name,
-        artist: track.artists.map(a => a.name).join(', '),
-        album_art: track.album.images?.[0]?.url || null,
-        preview_url: track.preview_url || null,
-        provider: 'spotify',
-      }));
-
-      return new Response(JSON.stringify({ tracks }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // --- Get Artist Genres ---
-    if (action === 'get_artist_genres') {
-      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;
-      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;
-
-      if (!clientId || !clientSecret) {
-        return new Response(JSON.stringify({ genres: {} }), {
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      if (!artists || !Array.isArray(artists) || artists.length === 0) {
-        return new Response(JSON.stringify({ genres: {} }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // 1. Get access token
-      const authString = btoa(`${clientId}:${clientSecret}`);
-      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${authString}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'grant_type=client_credentials',
-      });
-
-      const tokenData = await tokenRes.json();
-      if (!tokenRes.ok) {
-        return new Response(JSON.stringify({ genres: {} }), {
-           status: 200,
-           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      // 2. Search each artist to get their genres
-      const genresByArtist = {};
-      const targetArtists = [...new Set(artists)].slice(0, 5); // Deduplicate and limit
-      
-      for (const artistName of targetArtists) {
-        try {
-          const searchRes = await fetch(
-            `https://api.spotify.com/v1/search?q=${encodeURIComponent('artist:' + artistName)}&type=artist&limit=1`,
-            { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
-          );
-          if (searchRes.ok) {
-             const searchData = await searchRes.json();
-             const foundArtist = searchData.artists?.items?.[0];
-             if (foundArtist && foundArtist.genres?.length > 0) {
-                 genresByArtist[artistName] = foundArtist.genres[0]; 
-             } else {
-                 genresByArtist[artistName] = 'unknown';
-             }
-          }
-        } catch (e) {}
-      }
-
-      return new Response(JSON.stringify({ genres: genresByArtist }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // --- Default: Get Spotify Token ---
     const clientId = config.find(c => c.key === 'spotify_client_id')?.value;
     const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;
+    const youtubeKey = config.find(c => c.key === 'youtube_api_key')?.value;
 
-    if (!clientId || !clientSecret) {
-      return new Response(JSON.stringify({ error: 'Spotify credentials not configured' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    let result;
+    if (action === 'search_youtube') {
+      result = await handleYoutubeSearch(query, youtubeKey);
+    } else if (action === 'search_spotify') {
+      result = await handleSpotifySearch(query, clientId, clientSecret);
+    } else if (action === 'get_artist_genres') {
+      result = await getArtistGenres(artists, clientId, clientSecret);
+    } else {
+      // Default: Get token
+      if (!clientId || !clientSecret) {
+         result = { status: 400, data: { error: 'Spotify credentials not configured' } };
+      } else {
+         try {
+           const token = await getSpotifyToken(clientId, clientSecret);
+           result = { status: 200, data: { access_token: token } };
+         } catch(e) {
+           result = { status: 500, data: { error: e.message } };
+         }
+      }
     }
 
-    const authString = btoa(`${clientId}:${clientSecret}`);
-    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${authString}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    });
-
-    const tokenResult = await tokenResponse.json();
-    if (!tokenResponse.ok) {
-      throw new Error(tokenResult.error_description || 'Failed to get Spotify token');
-    }
-
-    return new Response(JSON.stringify(tokenResult), {
-      status: 200,
+    return new Response(JSON.stringify(result.data), {
+      status: result.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

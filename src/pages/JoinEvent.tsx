@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Users } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { getEventByCode } from '@/lib/database'
-import Footer from '@/components/Footer'
+import { cn } from '../lib/utils'
+import { getEventByCode } from '../lib/database'
+import Footer from '../components/Footer'
+import { APP_CONFIG } from '../constants/config'
 
 const JoinEvent = () =>{
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [joinCode, setJoinCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -13,7 +16,7 @@ const JoinEvent = () =>{
 
   const handleJoinEvent = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (joinCode.trim().length !== 6) return
+    if (joinCode.trim().length !== APP_CONFIG.CODE_LENGTH) return
 
     setIsLoading(true)
     setError('')
@@ -23,37 +26,37 @@ const JoinEvent = () =>{
       if (event) {
         navigate(`/event/${joinCode.toUpperCase()}`)
       } else {
-        setError('Evento no encontrado o expirado. Verifica el código e intenta nuevamente.')
+        setError(t('join.errorNotFound'))
       }
     } catch {
-      setError('No se pudo unirse al evento. Intenta nuevamente.')
+      setError(t('join.errorNotFound'))
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex items-center justify-center mb-6">
           <div className="bg-blue-500 rounded-full p-3">
             <Users className="h-8 w-8 text-white" />
           </div>
         </div>
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
-          Unirse al evento
+        <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+          {t('join.title')}
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Ingresa el código de 6 caracteres para unirte al evento de fotos
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+          {t('join.description', { length: APP_CONFIG.CODE_LENGTH })}
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-lg rounded-lg sm:px-10">
+        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-lg dark:shadow-gray-900/30 rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleJoinEvent}>
             <div>
-              <label htmlFor="event-code" className="block text-sm font-medium text-gray-700">
-                Código del evento
+              <label htmlFor="event-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('join.codeLabel')}
               </label>
               <div className="mt-1">
                 <input
@@ -64,12 +67,12 @@ const JoinEvent = () =>{
                   required
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                  placeholder="ABC123"
-                  maxLength={6}
-                  minLength={6}
+                  placeholder={t('join.codePlaceholder')}
+                  maxLength={APP_CONFIG.CODE_MAX_LENGTH}
+                  minLength={APP_CONFIG.CODE_MIN_LENGTH}
                   className={cn(
-                    "appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md",
-                    "placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500",
+                    "appearance-none block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-md",
+                    "placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100",
                     "text-center text-lg font-mono tracking-widest uppercase",
                     error ? 'border-red-300' : ''
                   )}
@@ -83,7 +86,7 @@ const JoinEvent = () =>{
             <div>
               <button
                 type="submit"
-                disabled={isLoading || joinCode.trim().length !== 6}
+                disabled={isLoading || joinCode.trim().length !== APP_CONFIG.CODE_LENGTH}
                 className={cn(
                   "w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium",
                   "text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
@@ -93,10 +96,10 @@ const JoinEvent = () =>{
                 {isLoading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Uniéndose...
+                    {t('common.loading')}
                   </div>
                 ) : (
-                  'Unirse al evento'
+                  t('join.joinBtn')
                 )}
               </button>
             </div>
@@ -106,13 +109,13 @@ const JoinEvent = () =>{
             <button
               onClick={() => navigate('/')}
               className={cn(
-                "w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium",
-                "text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
+                "w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium",
+                "text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
                 "transition-colors duration-200"
               )}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al inicio
+              {t('event.backToHome')}
             </button>
           </div>
         </div>

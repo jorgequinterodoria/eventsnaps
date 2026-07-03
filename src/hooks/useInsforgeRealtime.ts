@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react'
-import { insforge } from '@/lib/insforge'
+import { insforge } from '../lib/insforge'
 
 export function useInsforgeRealtime(eventId?: string) {
     const connectedRef = useRef(false)
@@ -24,22 +24,23 @@ export function useInsforgeRealtime(eventId?: string) {
         }
     }, [eventId])
 
-    const on = useCallback((event: string, handler: (payload: any) => void) => {
+    const on = useCallback(<T = Record<string, unknown>>(event: string, handler: (payload: T) => void) => {
         insforge.realtime.on(event, handler)
     }, [])
 
-    const off = useCallback((event: string, handler: (payload: any) => void) => {
+    const off = useCallback(<T = Record<string, unknown>>(event: string, handler: (payload: T) => void) => {
         insforge.realtime.off(event, handler)
     }, [])
 
-    const emit = useCallback(async (event: string, payload: any) => {
+    const emit = useCallback(async <T = Record<string, unknown>>(event: string, payload: T) => {
         if (!eventId) return
         // Determine the correct channel for the event
         const channel = event.startsWith('nowPlaying') ? `event:${eventId}` : `jukebox:${eventId}`
         try {
             await insforge.realtime.publish(channel, event, payload)
-        } catch (err) {
-            console.error('Failed to publish realtime event:', err)
+        } catch {
+            /* intentional fall through */
+            // failed to publish realtime event
         }
     }, [eventId])
 

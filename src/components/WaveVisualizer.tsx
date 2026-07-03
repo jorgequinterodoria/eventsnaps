@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { VISUALIZER_CONFIG } from '../constants/visualizer'
 
 export default function WaveVisualizer() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -10,39 +11,28 @@ export default function WaveVisualizer() {
     if (!ctx) return
 
     let raf = 0
-    const BAR_COUNT = 48
-    const BAR_GAP = 2
-    const CORNER_RADIUS = 3
+    const { BAR_COUNT, BAR_GAP, CORNER_RADIUS, ORGANIC_RATES, AMPLITUDES, HEIGHT_CALCULATION, GLOW_ALPHA, GRADIENT_STOPS, GRADIENT_ALPHAS, PHASE_MULTIPLIERS, BOUNDS, MAX_BAR_HEIGHT_FACTOR, ANIMATION_SPEED_DIVISOR, BASE_BAR_HEIGHT, BASE_SHADOW_BLUR, SHADOW_BLUR_MULTIPLIER } = VISUALIZER_CONFIG
 
     // Each bar has its own phase, frequency, and amplitude for organic motion
     const barParams = Array.from({ length: BAR_COUNT }, (_, i) => ({
       phase: Math.random() * Math.PI * 2,
-      freq1: 0.8 + Math.random() * 0.6,
-      freq2: 1.5 + Math.random() * 1.2,
-      freq3: 2.5 + Math.random() * 1.5,
-      amp1: 0.5 + Math.random() * 0.3,
-      amp2: 0.2 + Math.random() * 0.15,
-      amp3: 0.1 + Math.random() * 0.1,
-      baseHeight: 0.15 + (Math.sin(i / BAR_COUNT * Math.PI) * 0.15),
+      freq1: ORGANIC_RATES.FREQ_1_BASE + Math.random() * ORGANIC_RATES.FREQ_1_VAR,
+      freq2: ORGANIC_RATES.FREQ_2_BASE + Math.random() * ORGANIC_RATES.FREQ_2_VAR,
+      freq3: ORGANIC_RATES.FREQ_3_BASE + Math.random() * ORGANIC_RATES.FREQ_3_VAR,
+      amp1: AMPLITUDES.AMP_1_BASE + Math.random() * AMPLITUDES.AMP_1_VAR,
+      amp2: AMPLITUDES.AMP_2_BASE + Math.random() * AMPLITUDES.AMP_2_VAR,
+      amp3: AMPLITUDES.AMP_3_BASE + Math.random() * AMPLITUDES.AMP_3_VAR,
+      baseHeight: HEIGHT_CALCULATION.BASE_MULT + (Math.sin(i / BAR_COUNT * Math.PI) * HEIGHT_CALCULATION.BASE_MULT),
     }))
 
-    // Gradient colors (Spotify-inspired green → cyan → purple)
-    const gradientStops = [
-      { pos: 0, color: [30, 215, 96] },    // Spotify green
-      { pos: 0.35, color: [29, 185, 84] },  // Deep green  
-      { pos: 0.6, color: [0, 206, 209] },   // Cyan
-      { pos: 0.85, color: [138, 43, 226] }, // Purple
-      { pos: 1, color: [186, 85, 211] },    // Light purple
-    ]
-
     function getBarColor(normalizedIndex: number, alpha: number = 1): string {
-      let startStop = gradientStops[0]
-      let endStop = gradientStops[gradientStops.length - 1]
+      let startStop: { readonly pos: number, readonly color: readonly number[] } = GRADIENT_STOPS[0]
+      let endStop: { readonly pos: number, readonly color: readonly number[] } = GRADIENT_STOPS[GRADIENT_STOPS.length - 1]
 
-      for (let i = 0; i < gradientStops.length - 1; i++) {
-        if (normalizedIndex >= gradientStops[i].pos && normalizedIndex <= gradientStops[i + 1].pos) {
-          startStop = gradientStops[i]
-          endStop = gradientStops[i + 1]
+      for (let i = 0; i < GRADIENT_STOPS.length - 1; i++) {
+        if (normalizedIndex >= GRADIENT_STOPS[i].pos && normalizedIndex <= GRADIENT_STOPS[i + 1].pos) {
+          startStop = GRADIENT_STOPS[i]
+          endStop = GRADIENT_STOPS[i + 1]
           break
         }
       }
@@ -83,13 +73,13 @@ export default function WaveVisualizer() {
     const animate = () => {
       const w = canvas.getBoundingClientRect().width
       const h = canvas.getBoundingClientRect().height
-      const time = Date.now() / 1000
+      const time = Date.now() / ANIMATION_SPEED_DIVISOR
 
       ctx.clearRect(0, 0, w, h)
 
       const totalBarWidth = (w - BAR_GAP * (BAR_COUNT - 1)) / BAR_COUNT
       const barWidth = Math.max(2, totalBarWidth)
-      const maxBarHeight = h * 0.85
+      const maxBarHeight = h * MAX_BAR_HEIGHT_FACTOR
 
       for (let i = 0; i < BAR_COUNT; i++) {
         const p = barParams[i]
@@ -97,29 +87,29 @@ export default function WaveVisualizer() {
 
         // Multi-frequency sine wave for organic movement
         const wave1 = Math.sin(time * p.freq1 + p.phase) * p.amp1
-        const wave2 = Math.sin(time * p.freq2 + p.phase * 1.7) * p.amp2
-        const wave3 = Math.sin(time * p.freq3 + p.phase * 2.3) * p.amp3
+        const wave2 = Math.sin(time * p.freq2 + p.phase * PHASE_MULTIPLIERS.WAVE_2) * p.amp2
+        const wave3 = Math.sin(time * p.freq3 + p.phase * PHASE_MULTIPLIERS.WAVE_3) * p.amp3
         const combined = p.baseHeight + wave1 + wave2 + wave3
 
-        // Clamp between 0.05 and 1
-        const heightFactor = Math.min(1, Math.max(0.05, (combined + 1) / 2))
-        const barHeight = Math.max(4, heightFactor * maxBarHeight)
+        // Clamp between constants
+        const heightFactor = Math.min(BOUNDS.HIGH_CLAMP, Math.max(BOUNDS.LOW_CLAMP, (combined + 1) / 2))
+        const barHeight = Math.max(BASE_BAR_HEIGHT, heightFactor * maxBarHeight)
 
         const x = i * (barWidth + BAR_GAP)
         const y = h - barHeight
 
         // Glow effect — draw blurred version behind
         ctx.save()
-        ctx.shadowColor = getBarColor(normalizedI, 0.5)
-        ctx.shadowBlur = 8 + heightFactor * 6
+        ctx.shadowColor = getBarColor(normalizedI, GLOW_ALPHA)
+        ctx.shadowBlur = BASE_SHADOW_BLUR + heightFactor * SHADOW_BLUR_MULTIPLIER
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
 
         // Create vertical gradient for each bar
         const barGrad = ctx.createLinearGradient(x, y, x, h)
-        barGrad.addColorStop(0, getBarColor(normalizedI, 0.95))
-        barGrad.addColorStop(0.7, getBarColor(normalizedI, 0.7))
-        barGrad.addColorStop(1, getBarColor(normalizedI, 0.3))
+        barGrad.addColorStop(GRADIENT_ALPHAS[0].stop, getBarColor(normalizedI, GRADIENT_ALPHAS[0].alpha))
+        barGrad.addColorStop(GRADIENT_ALPHAS[1].stop, getBarColor(normalizedI, GRADIENT_ALPHAS[1].alpha))
+        barGrad.addColorStop(GRADIENT_ALPHAS[2].stop, getBarColor(normalizedI, GRADIENT_ALPHAS[2].alpha))
 
         ctx.fillStyle = barGrad
         roundRect(ctx, x, y, barWidth, barHeight, CORNER_RADIUS)

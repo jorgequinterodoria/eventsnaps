@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Photo } from '@/lib/insforge'
-import { getPhotoUrl } from '@/lib/database'
+import { useTranslation } from 'react-i18next'
+import type { Photo } from '../lib/insforge'
+import { getPhotoUrl } from '../lib/database'
 import { Play, Pause, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
+import { APP_CONFIG } from '../constants/config'
 
 interface CarouselProps {
   photos: Photo[]
@@ -12,7 +14,8 @@ interface CarouselProps {
   onClose?: () => void
 }
 
-const Carousel = ({ photos, startIndex = 0, autoPlay = true, intervalMs = 5000, onClose }: CarouselProps) => {
+const Carousel = ({ photos, startIndex = 0, autoPlay = true, intervalMs = APP_CONFIG.UI.CAROUSEL_INTERVAL_MS, onClose }: CarouselProps) => {
+  const { t } = useTranslation()
   const [current, setCurrent] = useState(startIndex)
   const [isPlaying, setIsPlaying] = useState(autoPlay)
   const [imageUrl, setImageUrl] = useState<string>('')
@@ -53,7 +56,7 @@ const Carousel = ({ photos, startIndex = 0, autoPlay = true, intervalMs = 5000, 
   if (safePhotos.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-white">
-        No hay fotos para mostrar
+        {t('common.noPhotos')}
       </div>
     )
   }

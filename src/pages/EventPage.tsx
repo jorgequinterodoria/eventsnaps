@@ -1,41 +1,49 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Play, Download, Square, CheckSquare, X, Music, Image as ImageIcon } from 'lucide-react'
-import { cn, formatTimeRemaining, isEventExpired } from '@/lib/utils'
-import { getEventByCode, getEventPhotos, uploadPhoto, downloadPhotoBlob, getPhotoUrl } from '@/lib/database'
-import JSZip from 'jszip'
-import { useEventRealtime } from '@/hooks/useEventRealtime'
-import { useStore } from '@/lib/store'
-import Carousel from '@/components/Carousel'
-import type { Event as EventType, Photo } from '@/lib/insforge'
-import { insforge } from '@/lib/insforge'
-import Footer from '@/components/Footer'
+import { useTranslation } from 'react-i18next'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import type { UserProfile } from '../types/admin'
+import { Upload, Camera, Clock, Users, Shield, ArrowLeft, Copy, Check, Music, Image as ImageIcon, Settings, Monitor } from 'lucide-react'
+import { cn, formatTimeRemaining, isEventExpired } from '../lib/utils'
+import { getThemeClasses, type ThemeId } from '../lib/themes'
+import { getEventByCode, getEventPhotos } from '../lib/database'
+import { useImageUpload } from '../hooks/useImageUpload'
+import { useEventArchive } from '../hooks/useEventArchive'
+import { useEventRealtime } from '../hooks/useEventRealtime'
+import { useStore } from '../lib/store'
+import Carousel from '../components/Carousel'
+import TVMode from '../components/TVMode'
+import type { Event as EventType, LandingConfig } from '../lib/insforge'
+import LandingEditor from '../components/event/LandingEditor'
+import { insforge } from '../lib/insforge'
+import Footer from '../components/Footer'
 import JukeboxPage from './JukeboxPage'
-import { useInsforgeRealtime } from '@/hooks/useInsforgeRealtime'
-import { useAlert } from '@/contexts/AlertContext'
-import { checkFeature, getBrandingConfig, resolveUserFeatures } from '@/lib/subscription'
-import type { BrandingConfig } from '@/lib/subscription'
+import { useInsforgeRealtime } from '../hooks/useInsforgeRealtime'
+import { useAlert } from '../contexts/AlertContext'
+import { checkFeature, getBrandingConfig, resolveUserFeatures } from '../lib/subscription'
+import type { BrandingConfig } from '../lib/subscription'
+import { PhotoCard } from '../components/event/PhotoCard'
+import { EventActionButtons } from '../components/event/EventActionButtons'
 
 const EventPage = () =>{
+  const { t } = useTranslation()
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const tvMode = searchParams.get('mode') === 'tv'
   const { showAlert } = useAlert()
   const { photos, setCurrentEvent, setPhotos, setLoading, setError, addPhoto } = useStore()
   
-  const [isUploading, setIsUploading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [event, setEvent] = useState<EventType | null>(null)
   const [showCarousel, setShowCarousel] = useState(false)
-  const [isDownloadingZip, setIsDownloadingZip] = useState(false)
-  const [selectMode, setSelectMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isDownloadingSelected, setIsDownloadingSelected] = useState(false)
   
+  const [showLandingEditor, setShowLandingEditor] = useState(false)
   const [jukeboxActive, setJukeboxActive] = useState(false)
   const [mode, setMode] = useState<'landing' | 'photos' | 'jukebox'>('photos')
   const [isCreatorPro, setIsCreatorPro] = useState(false)
-  const [creatorProfile, setCreatorProfile] = useState<any>(null)
+  const [creatorProfile, setCreatorProfile] = useState<UserProfile | null>(null)
   const [branding, setBranding] = useState<BrandingConfig>({ showDJLogo: false, logoUrl: null, djName: null })
+  const themeClasses = event ? getThemeClasses(event.theme || 'default') : null
   const { emit } = useInsforgeRealtime(event?.id)
 
   const loadEventData = useCallback(async () => {
@@ -54,7 +62,7 @@ const EventPage = () =>{
           // Use actual feature flag instead of raw plan_id comparison
           const features = await resolveUserFeatures(eventData.creator_id)
           proStatus = features.gallery
-          setCreatorProfile(profile)
+          setCreatorProfile(profile as UserProfile)
           // Load white-label branding
           const brandingCfg = await getBrandingConfig(eventData.creator_id)
           setBranding(brandingCfg)
@@ -72,12 +80,11 @@ const EventPage = () =>{
           setMode('photos')
         }
       } else {
-        setError('Evento no encontrado o expirado')
+        setError(t('event.notFound'))
         navigate('/')
       }
-    } catch (error) {
-      console.error('Error al cargar el evento:', error)
-      setError('Error al cargar el evento')
+    } catch {
+      setError(t('event.loadError'))
     } finally {
       setLoading(false)
     }
@@ -89,116 +96,21 @@ const EventPage = () =>{
 
   useEventRealtime(event?.id, () => photos, addPhoto, setPhotos)
 
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0 || !event) return
-
-    // Feature gate: gallery upload requires the gallery feature
-    if (event.creator_id && event.creator_id !== 'anonymous') {
-      const gate = await checkFeature(event.creator_id, 'gallery')
-      if (!gate.allowed) {
-        showAlert(gate.message ?? 'Mejora tu plan para usar esta función', 'Plan requerido')
-        return
-      }
-    }
-    
-    setIsUploading(true)
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        if (file.type.startsWith('image/')) {
-          const photo = await uploadPhoto(event.id, file)
-          addPhoto(photo)
-          emit('photo:uploaded', { eventId: event.id, photoId: photo.id })
-        }
-      }
-    } catch (error) {
-      console.error('Failed to upload photo:', error)
-      showAlert('Failed to upload photo. Please try again.', 'Error')
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const downloadAllAsZip = async () => {
-    if (!event || visiblePhotos.length === 0) return
-    setIsDownloadingZip(true)
-    try {
-      const zip = new JSZip()
-      for (const p of visiblePhotos) {
-        const blob = await downloadPhotoBlob(p.storage_path)
-        const parts = p.storage_path.split('/')
-        const name = parts[parts.length - 1]
-        zip.file(name, blob)
-      }
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
-      const url = URL.createObjectURL(zipBlob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `evento_${event.code}.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch {
-      showAlert('No se pudo descargar el ZIP. Intenta nuevamente.', 'Error')
-    } finally {
-      setIsDownloadingZip(false)
-    }
-  }
-
-  const toggleSelectMode = () => {
-    setSelectMode((v) => {
-      if (v) setSelectedIds(new Set())
-      return !v
-    })
-  }
-
-  const toggleSelectPhoto = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const selectAll = () => {
-    setSelectedIds(new Set(visiblePhotos.map((p) => p.id)))
-  }
-
-  const clearSelection = () => {
-    setSelectedIds(new Set())
-  }
-
-  const downloadSelectedZip = async () => {
-    if (!event || selectedIds.size === 0) return
-    setIsDownloadingSelected(true)
-    try {
-      const zip = new JSZip()
-      const ids = new Set(selectedIds)
-      for (const p of photos) {
-        if (ids.has(p.id)) {
-          const blob = await downloadPhotoBlob(p.storage_path)
-          const parts = p.storage_path.split('/')
-          const name = parts[parts.length - 1]
-          zip.file(name, blob)
-        }
-      }
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
-      const url = URL.createObjectURL(zipBlob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `evento_${event.code}_seleccion.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch {
-      showAlert('No se pudo descargar el ZIP seleccionado. Intenta nuevamente.', 'Error')
-    } finally {
-      setIsDownloadingSelected(false)
-    }
-  }
+  const visiblePhotos = photos.filter((p) => p.status !== 'rejected')
+  const { isUploading, handleFileUpload } = useImageUpload({ event, addPhoto, emit, showAlert })
+  const {
+    isDownloadingZip,
+    isDownloadingSelected,
+    selectMode,
+    selectedIds,
+    downloadAllAsZip,
+    downloadSelectedZip,
+    toggleSelectMode,
+    toggleSelectPhoto,
+    selectAll,
+    clearSelection,
+    disableSelectMode
+  } = useEventArchive({ event, photos, visiblePhotos, showAlert })
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -215,70 +127,120 @@ const EventPage = () =>{
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando evento...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('event.loadingEvent')}</p>
         </div>
       </div>
     )
   }
 
   const isExpired = isEventExpired(event.expires_at)
-  const visiblePhotos = photos.filter((p) => p.status !== 'rejected')
+
+  if (tvMode) {
+    return <TVMode eventCode={code || ''} onExit={() => navigate(`/event/${code}`, { replace: true })} />
+  }
 
   if (mode === 'landing') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">Bienvenido a {event.code}</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl">
-          <button 
-            onClick={() => setMode('photos')}
-            className="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-500"
-          >
-            <div className="bg-blue-100 p-4 rounded-full mb-4">
-              <ImageIcon className="h-12 w-12 text-blue-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">Galería de Fotos</h2>
-            <p className="text-gray-500 mt-2 text-center">Sube y mira fotos del evento</p>
-          </button>
+    const lc = (event.landing_config || {}) as LandingConfig
+    const coverUrl = lc.cover_url
+    const headline = lc.headline || event.title || t('event.welcomeTo', { code: event.code })
+    const subheadline = lc.subheadline || ''
+    const showGalleryBtn = lc.show_gallery_button !== false
+    const showJukeboxBtn = lc.show_jukebox_button !== false
+    const isCreator = false
 
-          <button 
-            onClick={() => setMode('jukebox')}
-            className="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500"
-          >
-             <div className="bg-green-100 p-4 rounded-full mb-4">
-              <Music className="h-12 w-12 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">Playlist Interactiva</h2>
-            <p className="text-gray-500 mt-2 text-center">Pide canciones y vota</p>
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${coverUrl ? '' : 'bg-gray-50 dark:bg-gray-900'}`}
+        style={coverUrl ? {
+          backgroundImage: `url(${coverUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        } : undefined}
+      >
+        {coverUrl && <div className="absolute inset-0 bg-black/40" />}
+        <div className="relative z-10 text-center max-w-2xl">
+          <h1 className="text-3xl font-bold mb-2 text-white">{headline}</h1>
+          {subheadline && <p className="text-xl mb-8 text-white/80">{subheadline}</p>}
+          {!coverUrl && <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">{headline}</h1>}
+          {!coverUrl && subheadline && <p className="text-xl mb-8 text-gray-600 dark:text-gray-400">{subheadline}</p>}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl mt-8">
+            {showGalleryBtn && (
+              <button 
+                onClick={() => setMode('photos')}
+                className="flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-500"
+              >
+                <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-full mb-4">
+                  <ImageIcon className="h-12 w-12 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('event.photoGallery')}</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">{t('event.photoGalleryDesc')}</p>
+              </button>
+            )}
+
+            {showJukeboxBtn && (
+              <button 
+                onClick={() => setMode('jukebox')}
+                className="flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500"
+              >
+                <div className="bg-green-100 dark:bg-green-900/50 p-4 rounded-full mb-4">
+                  <Music className="h-12 w-12 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('event.interactivePlaylist')}</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2 text-center">{t('event.interactivePlaylistDesc')}</p>
+              </button>
+            )}
+          </div>
+
+          <button onClick={() => navigate('/')} className="mt-8 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 underline">
+            {t('event.backToHome')}
           </button>
         </div>
-        <button onClick={() => navigate('/')} className="mt-8 text-gray-500 hover:text-gray-700 underline">
-            Volver al inicio
-        </button>
+
+        {event.creator_id && (
+          <button
+            onClick={() => setShowLandingEditor(true)}
+            className="absolute top-4 right-4 z-20 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-800 transition-colors"
+          >
+            <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
+
+        {showLandingEditor && (
+          <LandingEditor
+            eventId={event.id}
+            config={event.landing_config || {}}
+            onSaved={(cfg) => {
+              setEvent({ ...event, landing_config: cfg })
+              setShowLandingEditor(false)
+            }}
+            onClose={() => setShowLandingEditor(false)}
+          />
+        )}
       </div>
     )
   }
 
   if (mode === 'jukebox') {
       return (
-          <div className="min-h-screen bg-gray-50">
-             <div className="bg-white shadow-sm border-b p-4 flex items-center">
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+             <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 p-4 flex items-center">
                  {isCreatorPro && (
                    <>
-                     <button onClick={() => setMode('landing')} className="mr-4 text-gray-600 hover:text-gray-900">
+                      <button onClick={() => setMode('landing')} className="mr-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                          <ArrowLeft className="h-6 w-6" />
                      </button>
-                     <h1 className="text-xl font-bold">Volver al menú</h1>
-                   </>
-                 )}
-                 {!isCreatorPro && (
-                   <>
-                     <button onClick={() => navigate('/')} className="mr-4 text-gray-600 hover:text-gray-900">
-                         <ArrowLeft className="h-6 w-6" />
-                     </button>
-                     <h1 className="text-xl font-bold">Volver al inicio</h1>
+                      <h1 className="text-xl font-bold">{t('event.backToMenu')}</h1>
+                    </>
+                  )}
+                  {!isCreatorPro && (
+                    <>
+                      <button onClick={() => navigate('/')} className="mr-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                          <ArrowLeft className="h-6 w-6" />
+                      </button>
+                      <h1 className="text-xl font-bold">{t('event.backToHome')}</h1>
                    </>
                  )}
              </div>
@@ -288,104 +250,68 @@ const EventPage = () =>{
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={() => (jukeboxActive && isCreatorPro) ? setMode('landing') : navigate('/')}
-              className="flex items-center text-gray-600 hover:text-gray-900"
+              className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
-              {(jukeboxActive && isCreatorPro) ? 'Volver al menú' : 'Volver al inicio'}
+              {(jukeboxActive && isCreatorPro) ? t('event.backToMenu') : t('event.backToHome')}
             </button>
             
             <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Clock className="h-4 w-4 mr-1" />
                 {formatTimeRemaining(event.expires_at)}
               </div>
               
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Users className="h-4 w-4 mr-1" />
-                {visiblePhotos.length} fotos
+                {t('event.photosCount', { count: visiblePhotos.length })}
               </div>
             
             {event.moderation_enabled && (
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Shield className="h-4 w-4 mr-1" />
-                Con moderación
+                {t('event.withModeration')}
               </div>
             )}
 
-            {event.moderation_enabled && (
+            <EventActionButtons
+              event={event}
+              visiblePhotosCount={visiblePhotos.length}
+              selectMode={selectMode}
+              selectedIdsCount={selectedIds.size}
+              isDownloadingZip={isDownloadingZip}
+              isDownloadingSelected={isDownloadingSelected}
+              onNavigateModerate={() => navigate(`/moderate/${code}`)}
+              onShowCarousel={() => setShowCarousel(true)}
+              onDownloadAllAsZip={downloadAllAsZip}
+              onToggleSelectMode={toggleSelectMode}
+              onDownloadSelectedZip={downloadSelectedZip}
+              onSelectAll={selectAll}
+              onDisableSelectMode={disableSelectMode}
+            />
+            {visiblePhotos.length > 0 && (
               <button
-                onClick={() => navigate(`/moderate/${code}`)}
-                className="ml-2 flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm"
+                onClick={() => navigate(`/event/${code}?mode=tv`)}
+                className="ml-2 flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
+                title={t('event.tvMode')}
               >
-                <Shield className="h-4 w-4 mr-1" /> Moderación
+                <Monitor className="h-4 w-4 mr-1" /> {t('event.tvMode')}
               </button>
             )}
-
-              {visiblePhotos.length > 0 && (
-                <button
-                  onClick={() => setShowCarousel(true)}
-                  className="ml-4 flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-                >
-                  <Play className="h-4 w-4 mr-1" /> Ver presentación
-                </button>
-              )}
-
-              {visiblePhotos.length > 0 && (
-                <button
-                  onClick={downloadAllAsZip}
-                  disabled={isDownloadingZip}
-                  className="ml-2 flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm disabled:opacity-50"
-                >
-                  <Download className="h-4 w-4 mr-1" /> {isDownloadingZip ? 'Preparando...' : 'Descargar todo'}
-                </button>
-              )}
-
-              {visiblePhotos.length > 0 && !selectMode && (
-                <button
-                  onClick={toggleSelectMode}
-                  className="ml-2 flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm"
-                >
-                  <Square className="h-4 w-4 mr-1" /> Seleccionar
-                </button>
-              )}
-
-              {visiblePhotos.length > 0 && selectMode && (
-                <div className="ml-2 flex items-center space-x-2">
-                  <button
-                    onClick={downloadSelectedZip}
-                    disabled={selectedIds.size === 0 || isDownloadingSelected}
-                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm disabled:opacity-50"
-                  >
-                    <Download className="h-4 w-4 mr-1" /> {isDownloadingSelected ? 'Preparando...' : `Descargar seleccionadas (${selectedIds.size})`}
-                  </button>
-                  <button
-                    onClick={selectAll}
-                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm"
-                  >
-                    <CheckSquare className="h-4 w-4 mr-1" /> Seleccionar todo
-                  </button>
-                  <button
-                    onClick={() => { clearSelection(); setSelectMode(false) }}
-                    className="flex items-center px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm"
-                  >
-                    <X className="h-4 w-4 mr-1" /> Cancelar
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Event Code Banner */}
-      <div className="bg-blue-600 text-white">
+      <div className={themeClasses?.banner || 'bg-blue-600 text-white'}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -401,21 +327,21 @@ const EventPage = () =>{
               )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Código del evento</h1>
-              <p className="text-blue-100">Comparte este código para unirte</p>
+              <h1 className="text-2xl font-bold">{t('event.eventCode')}</h1>
+              <p className="text-white/80">{t('event.shareCode')}</p>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-3xl font-mono font-bold bg-blue-700 px-4 py-2 rounded-lg">
+              <span className={`text-3xl font-mono font-bold ${themeClasses?.bannerButton || 'bg-blue-700'} px-4 py-2 rounded-lg`}>
                 {event.code}
               </span>
               <button
                 onClick={copyEventCode}
-                className="flex items-center px-3 py-2 bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors"
+                className={`flex items-center px-3 py-2 ${themeClasses?.bannerButton || 'bg-blue-700 hover:bg-blue-800'} rounded-lg transition-colors`}
               >
                 {copied ? (
-                  <><Check className="h-4 w-4 mr-1" /> ¡Copiado!</>
+                  <><Check className="h-4 w-4 mr-1" /> {t('event.copied')}</>
                 ) : (
-                  <><Copy className="h-4 w-4 mr-1" /> Copiar</>
+                  <><Copy className="h-4 w-4 mr-1" /> {t('event.copy')}</>
                 )}
               </button>
             </div>
@@ -435,14 +361,14 @@ const EventPage = () =>{
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors"
+              className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
             >
               <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-lg font-medium text-gray-900 mb-2">
-                Sube fotos para compartir
+              <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                {t('event.uploadPhotos')}
               </p>
-              <p className="text-gray-600 mb-4">
-                Arrastra y suelta tus fotos aquí, o haz clic para seleccionar
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {t('event.dragAndDrop')}
               </p>
               <input
                 type="file"
@@ -457,7 +383,7 @@ const EventPage = () =>{
                 htmlFor="file-upload"
                 className={cn(
                   "inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md",
-                  "text-white bg-blue-600 hover:bg-blue-700 cursor-pointer",
+                  `text-white ${themeClasses?.button || 'bg-blue-600 hover:bg-blue-700'} cursor-pointer`,
                   "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
                   "transition-colors duration-200",
                   isUploading && "opacity-50 cursor-not-allowed"
@@ -466,19 +392,19 @@ const EventPage = () =>{
                 {isUploading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Subiendo...
+                    {t('event.uploading')}
                   </div>
                 ) : (
                   <div className="flex items-center">
                     <Camera className="h-5 w-5 mr-2" />
-                    Seleccionar fotos
+                    {t('event.selecting')}
                   </div>
                 )}
               </label>
             </div>
             {event.moderation_enabled && (
-              <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                Las fotos nuevas aparecen como "En moderación" mientras la IA las revisa.
+              <div className="mt-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                {t('event.underModeration')}
               </div>
             )}
           </div>
@@ -486,15 +412,15 @@ const EventPage = () =>{
 
         {/* Photos Grid */}
         <div className="mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {photos.length === 0 ? 'Aún no hay fotos' : `Fotos compartidas (${photos.length})`}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            {photos.length === 0 ? t('event.noPhotosYet') : t('event.photosShared', { count: photos.length })}
           </h2>
           {photos.length === 0 && !isExpired && (
-            <p className="text-gray-600">¡Sé el primero en compartir una foto!</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('event.beFirst')}</p>
           )}
           {isExpired && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p className="text-yellow-800">Este evento ha expirado. No se pueden subir más fotos.</p>
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800">{t('event.eventExpired')}</p>
             </div>
           )}
         </div>
@@ -514,101 +440,6 @@ const EventPage = () =>{
         )}
       </div>
       <Footer />
-    </div>
-  )
-}
-
-function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: { photo: Photo, selectionEnabled?: boolean, selected?: boolean, onToggleSelect?: () => void }) {
-  const [imageUrl, setImageUrl] = useState<string>('')
-  const [loading, setLoading] = useState(true)
-  const { showAlert } = useAlert()
-
-  useEffect(() => {
-    const loadImage = async () => {
-      if (photo.status === 'pending') {
-        setLoading(false)
-        return
-      }
-      try {
-        const url = await getPhotoUrl(photo.storage_path)
-        setImageUrl(url)
-      } catch (error) {
-        console.error('Failed to load photo:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadImage()
-  }, [photo.storage_path, photo.status])
-
-  return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden group relative">
-      {photo.status === 'pending' ? (
-        <div className="aspect-square bg-gray-200 animate-pulse relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-600" />
-          </div>
-          <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800 flex items-center">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-800 mr-1"></div>
-            En moderación
-          </div>
-        </div>
-      ) : loading ? (
-        <div className="aspect-square bg-gray-200 animate-pulse flex items-center justify-center">
-          <Camera className="h-12 w-12 text-gray-400" />
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => selectionEnabled && onToggleSelect ? onToggleSelect() : undefined}
-          className="w-full"
-        >
-          <img
-            src={imageUrl}
-            alt={photo.caption || 'Foto del evento'}
-            className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-200"
-          />
-        </button>
-      )}
-      {selectionEnabled && !loading && (
-        <div className="absolute top-2 right-2">
-          <span className={cn("inline-flex items-center px-2 py-1 rounded-md text-sm", selected ? "bg-blue-600 text-white" : "bg-white text-gray-700 border") }>
-            {selected ? <CheckSquare className="h-4 w-4 mr-1" /> : <Square className="h-4 w-4 mr-1" />}
-            {selected ? 'Seleccionada' : 'Seleccionar'}
-          </span>
-        </div>
-      )}
-      {photo.caption && (
-        <div className="p-4">
-          <p className="text-sm text-gray-600">{photo.caption}</p>
-        </div>
-      )}
-      {!loading && photo.status !== 'pending' && (
-        <div className="p-4 pt-0">
-          <button
-            onClick={async () => {
-              try {
-                const blob = await downloadPhotoBlob(photo.storage_path)
-                const url = URL.createObjectURL(blob)
-                const parts = photo.storage_path.split('/')
-                const name = parts[parts.length - 1]
-                const a = document.createElement('a')
-                a.href = url
-                a.download = name
-                document.body.appendChild(a)
-                a.click()
-                document.body.removeChild(a)
-                URL.revokeObjectURL(url)
-              } catch {
-                showAlert('No se pudo descargar la foto. Intenta nuevamente.', 'Error')
-              }
-            }}
-            className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm"
-          >
-            <Download className="h-4 w-4 mr-1" /> Descargar
-          </button>
-        </div>
-      )}
     </div>
   )
 }

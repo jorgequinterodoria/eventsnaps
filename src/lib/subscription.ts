@@ -18,11 +18,12 @@ const DEFAULT_FEATURES: PlanFeatures = {
     playlist: true,
     tv_mode: false,
     white_label: false,
+    themes: false,
     max_storage_gb: 0.5,
 }
 
 // ─── Feature check result ───────────────────────────────────────────────────
-export interface FeatureCheckResult {
+interface FeatureCheckResult {
     allowed: boolean
     message?: string
 }
@@ -39,7 +40,7 @@ export interface BrandingConfig {
  * Fetches the user's *active or trialing* subscription from `user_subscriptions`
  * joined with their plan features. Returns null if none exists.
  */
-export async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
+async function getUserSubscription(userId: string): Promise<UserSubscription | null> {
     const { data, error } = await insforge.database
         .from('user_subscriptions')
         .select('*, plans(*)')
@@ -48,8 +49,8 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
         .order('created_at', { ascending: false })
         .limit(1)
 
-    if (error || !data || (data as any[]).length === 0) return null
-    return (data as any[])[0] as UserSubscription
+    if (error || !data || data.length === 0) return null
+    return data[0] as UserSubscription
 }
 
 // ─── getPlanFeatures ────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
  * Fetches the features object for a given plan_id.
  * Falls back to DEFAULT_FEATURES on error.
  */
-export async function getPlanFeatures(planId: string): Promise<PlanFeatures> {
+async function getPlanFeatures(planId: string): Promise<PlanFeatures> {
     const { data, error } = await insforge.database
         .from('plans')
         .select('features')
@@ -149,7 +150,7 @@ export async function activateTrial(
             .eq('user_id', userId)
             .limit(1)
 
-        if (existing && (existing as any[]).length > 0) {
+        if (existing && existing.length > 0) {
             return { activated: false, message: 'Ya tienes o tuviste una suscripción activa.' }
         }
 
@@ -168,9 +169,12 @@ export async function activateTrial(
 
         if (error) throw error
         return { activated: true }
-    } catch (err: any) {
-        console.error('[activateTrial]', err)
-        return { activated: false, message: err?.message ?? 'Error activando trial.' }
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            return { activated: false, message: err?.message ?? 'Error activando trial.' }
+        } else {
+            return { activated: false, message: 'Error activando trial.' }
+        }
     }
 }
 
@@ -178,7 +182,7 @@ export async function activateTrial(
 /**
  * Returns true if the user has an expired trialing subscription (past current_period_end).
  */
-export async function isTrialExpired(userId: string): Promise<boolean> {
+async function isTrialExpired(userId: string): Promise<boolean> {
     const { data } = await insforge.database
         .from('user_subscriptions')
         .select('status, current_period_end, plan_id')
@@ -186,7 +190,7 @@ export async function isTrialExpired(userId: string): Promise<boolean> {
         .eq('status', 'trialing')
         .limit(1)
 
-    const row = data && (data as any[]).length > 0 ? (data as any[])[0] : null
+    const row = data && data.length > 0 ? data[0] : null
     if (!row) return false
     if (!row.current_period_end) return false
     return new Date(row.current_period_end) < new Date()
@@ -213,7 +217,7 @@ export async function getBrandingConfig(creatorId: string): Promise<BrandingConf
 
         return {
             showDJLogo: true,
-            logoUrl: (profile as any)?.custom_logo_url ?? null,
+            logoUrl: profile?.custom_logo_url ?? null,
             djName: profile?.full_name ?? null,
         }
     } catch {

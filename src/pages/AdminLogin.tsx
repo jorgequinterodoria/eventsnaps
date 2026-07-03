@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock } from 'lucide-react'
-import { useAlert } from '@/contexts/AlertContext'
+import { useAlert } from '../contexts/AlertContext'
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('')

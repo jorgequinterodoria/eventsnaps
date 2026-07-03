@@ -15,6 +15,7 @@ export type PlanFeatures = {
     playlist: boolean
     tv_mode: boolean
     white_label: boolean
+    themes: boolean
     max_storage_gb: number
 }
 
@@ -36,14 +37,25 @@ export type UserSubscription = {
     plans?: Plan   // joined relation
 }
 
+export interface LandingConfig {
+  cover_url?: string
+  headline?: string
+  subheadline?: string
+  show_gallery_button?: boolean
+  show_jukebox_button?: boolean
+}
+
 export type Event = {
     id: string
     code: string
+    title: string
     created_at: string
     expires_at: string
     creator_id: string
     moderation_enabled: boolean
     status: 'active' | 'expired'
+    theme: string
+    landing_config: LandingConfig
 }
 
 export type Photo = {
@@ -57,7 +69,7 @@ export type Photo = {
     uploaded_at: string
 }
 
-export type ModerationQueue = {
+type ModerationQueue = {
     id: string
     photo_id: string
     queued_at: string
@@ -66,7 +78,7 @@ export type ModerationQueue = {
     processed: boolean
 }
 
-export type ModerationAction = {
+type ModerationAction = {
     id: string
     photo_id: string
     moderator_id: string
@@ -75,7 +87,7 @@ export type ModerationAction = {
     actioned_at: string
 }
 
-export type JukeboxSettings = {
+type JukeboxSettings = {
     event_id: string
     is_active: boolean
     vibe_filters: string[]
@@ -84,7 +96,7 @@ export type JukeboxSettings = {
     created_at: string
 }
 
-export type JukeboxQueue = {
+export type JukeboxQueueItem = {
     id: string
     event_id: string
     track_id: string
@@ -94,13 +106,13 @@ export type JukeboxQueue = {
     album_art: string | null
     genre: string | null
     votes: number
-    voters: any
+    voters: string[]
     status: 'pending' | 'played'
     provider: 'spotify' | 'youtube'
     created_at: string
 }
 
-export type AdminConfig = {
+type AdminConfig = {
     key: string
     value: string
     updated_at: string

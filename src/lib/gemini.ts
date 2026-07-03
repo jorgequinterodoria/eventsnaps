@@ -1,4 +1,5 @@
 import { insforge } from './insforge'
+import { APP_CONFIG } from '../constants/config'
 
 /**
  * analyzePhotoForModeration
@@ -27,21 +28,25 @@ export async function analyzePhotoForModeration(
     if (!resultData) throw new Error('No data returned from edge function')
 
     // The SDK automatically parses the JSON response
-    const data = resultData as any
+    const data = resultData as Record<string, unknown>
 
     return {
       suggestion: data.suggestion === 'reject' ? 'reject' : 'approve',
-      confidence: typeof data.confidence === 'number' ? data.confidence : 0.8,
-      reason: data.reason ?? 'Analysis completed',
-      errorMessage: data.confidence === 0.0 ? data.reason : undefined
+      confidence: typeof data.confidence === 'number' ? data.confidence : APP_CONFIG.MODERATION.GEMINI_DEFAULT_CONFIDENCE,
+      reason: typeof data.reason === 'string' ? data.reason : 'Analysis completed',
+      errorMessage: data.confidence === 0.0 && typeof data.reason === 'string' ? data.reason : undefined
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Fail-open: flag for manual review rather than blocking
+    let errMessage = 'Unknown network error'
+    if (err instanceof Error) {
+      errMessage = err.message
+    }
     return {
       suggestion: null,
       confidence: 0.0,
       reason: 'Error en análisis de IA — revisar manualmente',
-      errorMessage: err?.message || 'Unknown network error'
+      errorMessage: errMessage
     }
   }
 }

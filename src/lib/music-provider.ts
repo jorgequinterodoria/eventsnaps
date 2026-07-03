@@ -1,3 +1,4 @@
+import { insforge } from './insforge'
 
 export interface Track {
     id: string;
@@ -8,38 +9,15 @@ export interface Track {
     provider: 'spotify' | 'youtube';
 }
 
-export const INSFORGE_URL = import.meta.env.VITE_INSFORGE_URL
-export const INSFORGE_ANON_KEY = import.meta.env.VITE_INSFORGE_ANON_KEY
-
-/**
- * Search tracks using the server-side edge function.
- * Supports both Spotify (default) and YouTube providers.
- */
-export async function searchTracks(query: string, provider: 'spotify' | 'youtube', _credentials?: any): Promise<Track[]> {
+export async function searchTracks(query: string, provider: 'spotify' | 'youtube'): Promise<Track[]> {
     const action = provider === 'spotify' ? 'search_spotify' : 'search_youtube'
 
-    // Direct fetch to the InsForge edge function
-    const res = await fetch(`${INSFORGE_URL}/functions/music-search`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${INSFORGE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ action, query }),
+    const { data, error } = await insforge.functions.invoke('music-search', {
+        body: { action, query }
     })
 
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: res.statusText }))
-        console.error(`${provider} search error:`, errorData)
-        throw new Error(errorData.error || `Search failed (${res.status})`)
-    }
-
-    const data = await res.json()
-
-    if (data?.error) {
-        console.error(`${provider} search error:`, data.error)
-        throw new Error(data.error)
-    }
+    if (error) throw new Error(error.message || 'Search failed')
+    if (data?.error) throw new Error(data.error)
 
     return (data?.tracks || []) as Track[]
 }

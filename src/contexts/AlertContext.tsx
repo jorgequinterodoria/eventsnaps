@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import AlertModal from '@/components/ui/AlertModal';
+import { useTranslation } from 'react-i18next';
+import AlertModal from '../components/ui/AlertModal';
 
 type AlertType = 'alert' | 'confirm';
 
@@ -18,6 +19,7 @@ interface AlertContextType {
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
 export function AlertProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const [state, setState] = useState<AlertState>({
     isOpen: false,
     type: 'alert',

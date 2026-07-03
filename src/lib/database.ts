@@ -1,6 +1,8 @@
 import { insforge } from './insforge'
 import { generateEventCode } from './utils'
+import { APP_CONFIG } from '../constants/config'
 import type { Event, Photo } from './insforge'
+import type { ThemeId } from './themes'
 
 export interface ModerationQueueItem {
   id: string
@@ -12,23 +14,25 @@ export interface ModerationQueueItem {
   confidence_score?: number
 }
 
-export async function createEvent(duration: '24h' | '72h', moderationEnabled: boolean = false, creatorId: string = 'anonymous') {
+export async function createEvent(duration: '24h' | '72h', moderationEnabled: boolean = false, creatorId: string = 'anonymous', theme: ThemeId = 'default', title: string = ''): Promise<Event> {
   const code = generateEventCode()
   const expiresAt = new Date()
 
   if (duration === '24h') {
-    expiresAt.setHours(expiresAt.getHours() + 24)
+    expiresAt.setHours(expiresAt.getHours() + APP_CONFIG.TRIAL_HOURS)
   } else {
-    expiresAt.setHours(expiresAt.getHours() + 72)
+    expiresAt.setHours(expiresAt.getHours() + APP_CONFIG.PRO_HOURS)
   }
 
   const { data, error } = await insforge.database
     .from('events')
     .insert({
       code,
+      title,
       expires_at: expiresAt.toISOString(),
       moderation_enabled: moderationEnabled,
-      creator_id: creatorId
+      creator_id: creatorId,
+      theme,
     })
     .select()
     .single()
@@ -68,15 +72,35 @@ export async function getEventPhotos(eventId: string): Promise<Photo[]> {
   return data || []
 }
 
-export async function uploadPhoto(eventId: string, file: File, caption?: string, uploaderId?: string) {
+export async function uploadPhoto(eventId: string, file: File, caption?: string, uploaderId?: string): Promise<Photo> {
   uploaderId = uploaderId || 'anonymous'
   const fileName = `${Date.now()}-${file.name}`
   const filePath = `events/${eventId}/${fileName}`
 
-  const { data: uploadData, error: uploadError } = await insforge.storage
-    .from('photos')
-    .upload(filePath, file)
-  if (uploadError) throw uploadError
+  const { data: uploadStrategy, error: strategyError } = await insforge.functions.invoke('get-upload-url', {
+    body: { fileName: filePath, contentType: file.type || 'image/jpeg', size: file.size }
+  })
+  if (strategyError) throw strategyError
+
+  const formData = new FormData()
+  for (const [key, value] of Object.entries(uploadStrategy.fields)) {
+    formData.append(key, value as string)
+  }
+  formData.append('file', file)
+
+  const s3Res = await fetch(uploadStrategy.uploadUrl, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!s3Res.ok) {
+    const s3Text = await s3Res.text().catch(() => 'S3 upload failed')
+    throw new Error(s3Text)
+  }
+
+  const { error: confirmError } = await insforge.functions.invoke('confirm-upload', {
+    body: { key: uploadStrategy.key, size: file.size }
+  })
+  if (confirmError) throw confirmError
 
   const { data: event } = await insforge.database
     .from('events')
@@ -90,8 +114,8 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
     .from('photos')
     .insert({
       event_id: eventId,
-      storage_path: uploadData?.key || filePath,
-      storage_url: uploadData?.url || null,
+      storage_path: uploadStrategy.key || filePath,
+      storage_url: null,
       caption: caption || null,
       uploaded_by: uploaderId,
       status: initialStatus
@@ -127,7 +151,7 @@ export async function getModerationQueue(eventId: string): Promise<ModerationQue
   return (data as ModerationQueueItem[]) || []
 }
 
-export async function moderatePhoto(photoId: string, action: 'approve' | 'reject', reason?: string, moderatorId?: string) {
+export async function moderatePhoto(photoId: string, action: 'approve' | 'reject', reason?: string, moderatorId?: string): Promise<void> {
   const resolvedModeratorId = moderatorId || 'anonymous'
 
   // Update photo status
@@ -162,7 +186,7 @@ export async function setModerationAISuggestion(
   suggestion: 'approve' | 'reject' | null,
   confidence: number,
   errorMessage?: string
-) {
+): Promise<void> {
   const { error } = await insforge.database
     .from('moderation_queues')
     .update({

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { APP_CONFIG } from '../constants/config'
 
 interface QRCodeProps {
   url: string
@@ -6,7 +7,7 @@ interface QRCodeProps {
   caption?: string
 }
 
-const QRCode = ({ url, size = 256, caption }: QRCodeProps) => {
+const QRCode = ({ url, size = APP_CONFIG.UI.QR_CODE_SIZE_DEFAULT, caption }: QRCodeProps) => {
   const src = useMemo(() => {
     const encoded = encodeURIComponent(url)
     return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}`
