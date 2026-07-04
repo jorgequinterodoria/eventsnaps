@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { APP_CONFIG } from '../constants/config'
-import i18n from './i18n'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -21,7 +20,7 @@ export function formatTimeRemaining(expiresAt: string): string {
   const expires = new Date(expiresAt)
   const diff = expires.getTime() - now.getTime()
 
-  if (diff <= 0) return i18n.t('common.expired')
+  if (diff <= 0) return 'Expirado'
 
   const MS_PER_HOUR = APP_CONFIG.MS_PER_SECOND * APP_CONFIG.SECONDS_PER_MINUTE * APP_CONFIG.MINUTES_PER_HOUR
   const MS_PER_MINUTE = APP_CONFIG.MS_PER_SECOND * APP_CONFIG.SECONDS_PER_MINUTE
@@ -30,9 +29,9 @@ export function formatTimeRemaining(expiresAt: string): string {
   const minutes = Math.floor((diff % MS_PER_HOUR) / MS_PER_MINUTE)
 
   if (hours > 0) {
-    return i18n.t('common.hoursAndMinutesRemaining', { hours, minutes })
+    return `${hours}h ${minutes}m restantes`
   }
-  return i18n.t('common.minutesRemaining', { minutes })
+  return `${minutes}min restantes`
 }
 
 export function isEventExpired(expiresAt: string): boolean {

@@ -5,6 +5,8 @@ import { APP_CONFIG } from '../constants/config'
  * analyzePhotoForModeration
  * Delegates the Gemini call to the server-side edge function `moderate-photo`
  * so the API key is never exposed in the frontend bundle.
+ * 
+ * AI MODERATION DISABLED - keeping code for future use
  */
 export async function analyzePhotoForModeration(
   _photoId: string,
@@ -15,6 +17,16 @@ export async function analyzePhotoForModeration(
   reason: string
   errorMessage?: string
 }> {
+  // AI disabled - return default
+  return {
+    suggestion: null,
+    confidence: 0,
+    reason: 'AI moderation disabled',
+    errorMessage: undefined
+  }
+
+  // AI disabled - keep code for future use
+  /*
   try {
     const insforgeUrl = import.meta.env.VITE_INSFORGE_URL
     const anonKey = import.meta.env.VITE_INSFORGE_ANON_KEY
@@ -49,4 +61,5 @@ export async function analyzePhotoForModeration(
       errorMessage: errMessage
     }
   }
+  */
 }

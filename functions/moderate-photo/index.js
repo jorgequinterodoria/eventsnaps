@@ -1,12 +1,8 @@
 // Edge Function: moderate-photo
-// Runs server-side. Gemini API key is read from InsForge admin_config table
-// (key = 'gemini_api_key'), with fallback to Deno.env GEMINI_API_KEY.
+// Runs server-side. Uses Gemini API for content moderation.
 // Accepts: { storagePath: string, insforgeUrl: string, anonKey: string }
 // Returns: { suggestion: 'approve'|'reject', confidence: number, reason: string }
 
-/**
- * Fetch the Gemini API key from admin_config table, fallback to env var.
- */
 async function getGeminiKey(insforgeUrl, anonKey) {
   try {
     const url = `${insforgeUrl}/api/database/records/admin_config?select=value&key=eq.gemini_api_key&limit=1`
@@ -18,10 +14,7 @@ async function getGeminiKey(insforgeUrl, anonKey) {
       const row = Array.isArray(rows) ? rows[0] : (rows?.data?.[0])
       if (row?.value) return row.value
     }
-  } catch {
-    /* intentional fall through: proceed to fallback */
-  }
-  // Fallback to Deno environment variable
+  } catch {}
   return Deno.env.get('GEMINI_API_KEY') ?? ''
 }
 
@@ -99,7 +92,6 @@ module.exports = async function handler(request) {
       })
     }
 
-    // 1. Resolve Gemini key (admin_config takes priority over env var)
     const apiKey = await getGeminiKey(insforgeUrl, anonKey)
     if (!apiKey) {
       return new Response(
@@ -108,7 +100,6 @@ module.exports = async function handler(request) {
       )
     }
 
-    // 2. Download photo from InsForge storage
     const photoRes = await downloadPhoto(insforgeUrl, anonKey, storagePath)
     const arrayBuffer = await photoRes.arrayBuffer()
     const uint8 = new Uint8Array(arrayBuffer)
@@ -117,14 +108,12 @@ module.exports = async function handler(request) {
     const base64 = btoa(binary)
     const mimeType = photoRes.headers.get('content-type') || 'image/jpeg'
 
-    // 3. Analyze with Gemini
     const result = await analyzeWithGemini(base64, mimeType, apiKey)
 
     return new Response(JSON.stringify(result), {
       status: 200, headers: { 'Content-Type': 'application/json', ...CORS }
     })
   } catch (err) {
-    // Intentionally omitting console.error to avoid debug-leftover warnings
     return new Response(
       JSON.stringify({
         suggestion: null,

@@ -301,5 +301,25 @@
     "showGallery": "Mostrar botão da galeria",
     "showJukebox": "Mostrar botão do jukebox",
     "saveConfig": "Salvar configuração"
+  },
+  "challenge": {
+    "create": "Criar Desafio",
+    "title": "Título",
+    "description": "Descrição",
+    "prize": "Prêmio",
+    "creating": "Criando...",
+    "createBtn": "Criar Desafio",
+    "leaderboard": "Classificação",
+    "noEntries": "Ainda não há participantes"
+  },
+  "reactions": {
+    "title": "Reações",
+    "toggle": "Reagir"
+  },
+  "livewall": {
+    "title": "Mural ao Vivo",
+    "name": "Seu nome",
+    "placeholder": "Escreva uma mensagem...",
+    "send": "Enviar"
   }
 }

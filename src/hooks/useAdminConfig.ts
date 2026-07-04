@@ -7,7 +7,7 @@ export const useAdminConfig = () => {
     const [clientId, setClientId] = useState('')
     const [clientSecret, setClientSecret] = useState('')
     const [youtubeKey, setYoutubeKey] = useState('')
-    const [geminiKey, setGeminiKey] = useState('')
+    // const [geminiKey, setGeminiKey] = useState('')  // AI disabled
     const { showAlert } = useAlert()
 
     const loadConfig = useCallback(async () => {
@@ -17,7 +17,7 @@ export const useAdminConfig = () => {
                 if (item.key === 'spotify_client_id') setClientId(item.value)
                 if (item.key === 'spotify_client_secret') setClientSecret(item.value)
                 if (item.key === 'youtube_api_key') setYoutubeKey(item.value)
-                if (item.key === 'gemini_api_key') setGeminiKey(item.value)
+                // if (item.key === 'gemini_api_key') setGeminiKey(item.value)  // AI disabled
             })
         }
     }, [])
@@ -27,7 +27,7 @@ export const useAdminConfig = () => {
             { key: 'spotify_client_id', value: clientId },
             { key: 'spotify_client_secret', value: clientSecret },
             { key: 'youtube_api_key', value: youtubeKey },
-            { key: 'gemini_api_key', value: geminiKey }
+            // { key: 'gemini_api_key', value: geminiKey }  // AI disabled
         ])
         if (error) {
             showAlert('Error al guardar: ' + error.message, 'Error')
@@ -43,8 +43,8 @@ export const useAdminConfig = () => {
         setClientSecret,
         youtubeKey,
         setYoutubeKey,
-        geminiKey,
-        setGeminiKey,
+        // geminiKey,  // AI disabled
+        // setGeminiKey,  // AI disabled
         loadConfig,
         saveConfig,
     }

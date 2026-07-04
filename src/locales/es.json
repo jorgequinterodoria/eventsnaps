@@ -184,7 +184,8 @@
     "deleteSuccess": "Evento eliminado",
     "deleteError": "Error al eliminar el evento",
     "themePreference": "Tema visual preferido",
-    "language": "Idioma"
+    "language": "Idioma",
+    "expired": "Expirado"
   },
   "moderation": {
     "title": "Moderación de fotos",
@@ -250,7 +251,8 @@
     "planPro": "Plan Pro",
     "planBasic": "Plan Básico",
     "planTrial": "Plan Trial",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "expired": "Expirado"
   },
   "tv": {
     "title": "Modo TV",
@@ -295,6 +297,15 @@
     "concert": "Concierto",
     "corporate": "Corporativo"
   },
+  "archive": {
+    "saved": "Álbum Guardado",
+    "savedDesc": "Tus fotos están seguras por 30 días más",
+    "expiring": "¿Guardar tus fotos?",
+    "expiringDesc": "Tu evento está por expirar. Guarda el álbum permanentemente por 30 días.",
+    "saveNow": "Guardar Álbum",
+    "saving": "Guardando...",
+    "later": "Ahora no"
+  },
   "footer": {
     "developedBy": "Desarrollado por Jorge Quintero"
   },
@@ -306,5 +317,25 @@
     "showGallery": "Mostrar botón de galería",
     "showJukebox": "Mostrar botón de jukebox",
     "saveConfig": "Guardar configuración"
+  },
+  "challenge": {
+    "create": "Crear Reto",
+    "title": "Título",
+    "description": "Descripción",
+    "prize": "Premio",
+    "creating": "Creando...",
+    "createBtn": "Crear Reto",
+    "leaderboard": "Leaderboard",
+    "noEntries": "Aún no hay participantes"
+  },
+  "reactions": {
+    "title": "Reacciones",
+    "toggle": "Reaccionar"
+  },
+  "livewall": {
+    "title": "Muro en Vivo",
+    "name": "Tu nombre",
+    "placeholder": "Escribe un mensaje...",
+    "send": "Enviar"
   }
 }

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Settings, ShieldAlert, Save } from 'lucide-react'
+import { Settings, Save } from 'lucide-react' // ShieldAlert removed - AI disabled
 
 interface ApiConfigurationProps {
   clientId: string
@@ -8,15 +8,16 @@ interface ApiConfigurationProps {
   setClientSecret: (val: string) => void
   youtubeKey: string
   setYoutubeKey: (val: string) => void
-  geminiKey: string
-  setGeminiKey: (val: string) => void
+  // geminiKey: string  // AI disabled
+  // setGeminiKey: (val: string) => void  // AI disabled
   saveConfig: () => void
   retrying: boolean
 }
 
 export const ApiConfiguration = ({
   clientId, setClientId, clientSecret, setClientSecret,
-  youtubeKey, setYoutubeKey, geminiKey, setGeminiKey,
+  youtubeKey, setYoutubeKey,
+  // geminiKey, setGeminiKey,  // AI disabled
   saveConfig, retrying
 }: ApiConfigurationProps) => {
   const { t } = useTranslation()
@@ -65,6 +66,7 @@ export const ApiConfiguration = ({
           </div>
         </div>
 
+        {/* Gemini AI config - DISABLED
         <div className="bg-purple-50 p-5 rounded-lg border border-purple-100">
           <h3 className="text-lg font-medium text-purple-800 mb-4 flex items-center gap-2">
             <ShieldAlert className="h-5 w-5" />
@@ -84,6 +86,7 @@ export const ApiConfiguration = ({
             </p>
           </div>
         </div>
+        */}
       </div>
       
       <div className="mt-6 pt-6 border-t border-gray-100 flex items-center gap-4 flex-wrap">

@@ -16,6 +16,12 @@ export type PlanFeatures = {
     tv_mode: boolean
     white_label: boolean
     themes: boolean
+    enhancements: boolean
+    reel: boolean
+    album: boolean
+    challenges: boolean
+    reactions: boolean
+    live_wall: boolean
     max_storage_gb: number
 }
 
@@ -56,6 +62,8 @@ export type Event = {
     status: 'active' | 'expired'
     theme: string
     landing_config: LandingConfig
+    archived: boolean
+    archive_expires_at: string | null
 }
 
 export type Photo = {
@@ -63,10 +71,49 @@ export type Photo = {
     event_id: string
     storage_path: string
     storage_url: string | null
+    enhanced_url: string | null
+    ai_metadata: Record<string, any> | null
     caption: string | null
     status: 'pending' | 'approved' | 'rejected'
     uploaded_by: string
     uploaded_at: string
+    challenge_id?: string | null
+}
+
+export type Challenge = {
+    id: string
+    event_id: string
+    title: string
+    description: string | null
+    prize: string | null
+    is_active: boolean
+    created_at: string
+}
+
+export type PhotoReaction = {
+    id: string
+    photo_id: string
+    session_id: string
+    emoji: string
+    created_at: string
+}
+
+export type EventRecap = {
+    id: string
+    event_id: string
+    status: 'pending' | 'generating' | 'ready' | 'error'
+    video_url: string | null
+    music_track: string | null
+    created_at: string
+}
+
+export type LiveMessage = {
+    id: string
+    event_id: string
+    author_name: string
+    message: string
+    is_approved: boolean
+    created_at: string
 }
 
 type ModerationQueue = {

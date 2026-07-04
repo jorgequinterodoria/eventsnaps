@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Clock, Shield, CheckCircle, Crown } from 'lucide-react'
+import { Clock, CheckCircle, Crown } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { createEvent } from '../lib/database'
 import QRCode from '../components/QRCode'
@@ -18,7 +18,7 @@ const CreateEvent = () =>{
   const { showAlert } = useAlert()
   const { t } = useTranslation()
   const [duration, setDuration] = useState<'24h' | '72h'>('24h')
-  const [moderationEnabled, setModerationEnabled] = useState(false)
+  // const [moderationEnabled, setModerationEnabled] = useState(false) // AI moderation disabled
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>('default')
   const [eventTitle, setEventTitle] = useState('')
   const [isCreating, setIsCreating] = useState(false)
@@ -58,14 +58,14 @@ const CreateEvent = () =>{
     try {
       const creatorId = userProfile ? userProfile.id : 'anonymous'
 
-      // Gate: only users with gallery feature can enable moderation
-      let finalModeration = false
-      if (moderationEnabled && userProfile?.id) {
-        const result = await checkFeature(userProfile.id, 'gallery')
-        finalModeration = result.allowed ? moderationEnabled : false
-      }
+      // AI moderation disabled - always pass false
+      // let finalModeration = false
+      // if (moderationEnabled && userProfile?.id) {
+      //   const result = await checkFeature(userProfile.id, 'gallery')
+      //   finalModeration = result.allowed ? moderationEnabled : false
+      // }
 
-      const event = await createEvent(duration, finalModeration, creatorId, selectedTheme, eventTitle)
+      const event = await createEvent(duration, false, creatorId, selectedTheme, eventTitle)
       setCreatedCode(event.code)
       setShowQR(true)
     } catch {
@@ -148,7 +148,8 @@ const CreateEvent = () =>{
             />
           </div>
 
-          {/* Moderation Toggle (Only Pro) */}
+          {/* Moderation Toggle - AI DISABLED */}
+          {/*
           {isPro ? (
             <div className="mb-8">
               <div className="flex items-center justify-between">
@@ -189,6 +190,7 @@ const CreateEvent = () =>{
               </div>
             </div>
           )}
+          */}
 
           {/* Theme Selection */}
           <div className="mb-6">

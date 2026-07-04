@@ -184,7 +184,8 @@
     "deleteSuccess": "Event deleted",
     "deleteError": "Error deleting event",
     "themePreference": "Preferred theme",
-    "language": "Language"
+    "language": "Language",
+    "expired": "Expired"
   },
   "moderation": {
     "title": "Photo moderation",
@@ -290,6 +291,15 @@
     "concert": "Concert",
     "corporate": "Corporate"
   },
+  "archive": {
+    "saved": "Album Saved",
+    "savedDesc": "Your photos are safe for 30 more days",
+    "expiring": "Save your photos?",
+    "expiringDesc": "Your event is about to expire. Save the album permanently for 30 days.",
+    "saveNow": "Save Album",
+    "saving": "Saving...",
+    "later": "Later"
+  },
   "footer": {
     "developedBy": "Developed by Jorge Quintero"
   },
@@ -301,5 +311,25 @@
     "showGallery": "Show gallery button",
     "showJukebox": "Show jukebox button",
     "saveConfig": "Save configuration"
+  },
+  "challenge": {
+    "create": "Create Challenge",
+    "title": "Title",
+    "description": "Description",
+    "prize": "Prize",
+    "creating": "Creating...",
+    "createBtn": "Create Challenge",
+    "leaderboard": "Leaderboard",
+    "noEntries": "No participants yet"
+  },
+  "reactions": {
+    "title": "Reactions",
+    "toggle": "React"
+  },
+  "livewall": {
+    "title": "Live Wall",
+    "name": "Your name",
+    "placeholder": "Write a message...",
+    "send": "Send"
   }
 }

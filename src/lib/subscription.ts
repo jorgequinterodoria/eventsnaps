@@ -19,6 +19,12 @@ const DEFAULT_FEATURES: PlanFeatures = {
     tv_mode: false,
     white_label: false,
     themes: false,
+    enhancements: false,
+    reel: false,
+    album: false,
+    challenges: false,
+    reactions: false,
+    live_wall: false,
     max_storage_gb: 0.5,
 }
 

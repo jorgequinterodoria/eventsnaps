@@ -62,7 +62,13 @@ export const useAdminModeration = () => {
         })
     }
 
+    // AI moderation disabled - keep code for future use
     const retryGeminiErrors = async () => {
+        // AI disabled - show message
+        showAlert('AI moderation is currently disabled.')
+        return
+
+        /*
         setRetrying(true)
         try {
             const { data: failedRows } = await insforge.database
@@ -139,7 +145,7 @@ export const useAdminModeration = () => {
                     }
                     successes++
                 } catch {
-                    /* intentional fall through */
+                    // intentional fall through
                 }
             }
             await loadModLogs()
@@ -153,6 +159,7 @@ export const useAdminModeration = () => {
         } finally {
             setRetrying(false)
         }
+        */
     }
 
     return {

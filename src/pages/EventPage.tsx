@@ -23,6 +23,13 @@ import { checkFeature, getBrandingConfig, resolveUserFeatures } from '../lib/sub
 import type { BrandingConfig } from '../lib/subscription'
 import { PhotoCard } from '../components/event/PhotoCard'
 import { EventActionButtons } from '../components/event/EventActionButtons'
+import { ArchivePrompt } from '../components/event/ArchivePrompt'
+// import { ReelPreview } from '../components/event/ReelPreview' // AI reel disabled
+import ChallengeCard from '../components/event/ChallengeCard'
+import ChallengeCreator from '../components/event/ChallengeCreator'
+import ChallengeLeaderboard from '../components/event/ChallengeLeaderboard'
+import LiveMessageForm from '../components/event/LiveMessageForm'
+import { useChallenges } from '../hooks/useChallenges'
 
 const EventPage = () =>{
   const { t } = useTranslation()
@@ -32,6 +39,7 @@ const EventPage = () =>{
   const tvMode = searchParams.get('mode') === 'tv'
   const { showAlert } = useAlert()
   const { photos, setCurrentEvent, setPhotos, setLoading, setError, addPhoto } = useStore()
+  const [showChallengeCreator, setShowChallengeCreator] = useState(false)
   
   const [copied, setCopied] = useState(false)
   const [event, setEvent] = useState<EventType | null>(null)
@@ -45,6 +53,7 @@ const EventPage = () =>{
   const [branding, setBranding] = useState<BrandingConfig>({ showDJLogo: false, logoUrl: null, djName: null })
   const themeClasses = event ? getThemeClasses(event.theme || 'default') : null
   const { emit } = useInsforgeRealtime(event?.id)
+  const { challenges, activeChallenge, setActiveChallenge, loadLeaderboard, leaderboard } = useChallenges(event?.id)
 
   const loadEventData = useCallback(async () => {
     if (!code) return
@@ -263,19 +272,19 @@ const EventPage = () =>{
               {(jukeboxActive && isCreatorPro) ? t('event.backToMenu') : t('event.backToHome')}
             </button>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
+              <div className="hidden sm:flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Clock className="h-4 w-4 mr-1" />
                 {formatTimeRemaining(event.expires_at)}
               </div>
               
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Users className="h-4 w-4 mr-1" />
-                {t('event.photosCount', { count: visiblePhotos.length })}
+                {visiblePhotos.length} fotos
               </div>
             
             {event.moderation_enabled && (
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <div className="hidden sm:flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Shield className="h-4 w-4 mr-1" />
                 {t('event.withModeration')}
               </div>
@@ -289,7 +298,6 @@ const EventPage = () =>{
               isDownloadingZip={isDownloadingZip}
               isDownloadingSelected={isDownloadingSelected}
               onNavigateModerate={() => navigate(`/moderate/${code}`)}
-              onShowCarousel={() => setShowCarousel(true)}
               onDownloadAllAsZip={downloadAllAsZip}
               onToggleSelectMode={toggleSelectMode}
               onDownloadSelectedZip={downloadSelectedZip}
@@ -299,10 +307,10 @@ const EventPage = () =>{
             {visiblePhotos.length > 0 && (
               <button
                 onClick={() => navigate(`/event/${code}?mode=tv`)}
-                className="ml-2 flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
+                className="flex items-center px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
                 title={t('event.tvMode')}
               >
-                <Monitor className="h-4 w-4 mr-1" /> {t('event.tvMode')}
+                <Monitor className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">{t('event.tvMode')}</span>
               </button>
             )}
             </div>
@@ -313,7 +321,7 @@ const EventPage = () =>{
       {/* Event Code Banner */}
       <div className={themeClasses?.banner || 'bg-blue-600 text-white'}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               {/* White-label branding: show DJ logo if enabled, otherwise EventSnaps logo */}
               {branding.showDJLogo && branding.logoUrl ? (
@@ -327,16 +335,16 @@ const EventPage = () =>{
               )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{t('event.eventCode')}</h1>
-              <p className="text-white/80">{t('event.shareCode')}</p>
+              <h1 className="text-xl sm:text-2xl font-bold">{t('event.eventCode')}</h1>
+              <p className="text-white/80 text-sm">{t('event.shareCode')}</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <span className={`text-3xl font-mono font-bold ${themeClasses?.bannerButton || 'bg-blue-700'} px-4 py-2 rounded-lg`}>
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl sm:text-3xl font-mono font-bold ${themeClasses?.bannerButton || 'bg-blue-700'} px-3 sm:px-4 py-2 rounded-lg`}>
                 {event.code}
               </span>
               <button
                 onClick={copyEventCode}
-                className={`flex items-center px-3 py-2 ${themeClasses?.bannerButton || 'bg-blue-700 hover:bg-blue-800'} rounded-lg transition-colors`}
+                className={`flex items-center px-3 py-2.5 ${themeClasses?.bannerButton || 'bg-blue-700 hover:bg-blue-800'} rounded-lg transition-colors`}
               >
                 {copied ? (
                   <><Check className="h-4 w-4 mr-1" /> {t('event.copied')}</>
@@ -350,6 +358,52 @@ const EventPage = () =>{
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Archive Prompt */}
+        {isExpired && event.creator_id && (
+          <div className="mb-6">
+            <ArchivePrompt
+              eventId={event.id}
+              expiresAt={event.expires_at}
+              isCreator={true}
+              archived={event.archived || false}
+            />
+          </div>
+        )}
+
+        {/* Reel Preview (creator only) - AI DISABLED
+        {isExpired && isCreatorPro && (
+          <div className="mb-6">
+            <ReelPreview eventId={event.id} isCreator={true} />
+          </div>
+        )}
+        */}
+
+        {/* Photo Challenges */}
+        {challenges.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Retos</h3>
+              {isCreatorPro && (
+                <button onClick={() => setShowChallengeCreator(true)} className="text-sm text-yellow-600 hover:text-yellow-700">+ Crear reto</button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {challenges.map(c => (
+                <ChallengeCard key={c.id} challenge={c} isActive={activeChallenge?.id === c.id} onSelect={() => setActiveChallenge(c)} />
+              ))}
+            </div>
+            {activeChallenge && (
+              <div className="mt-4">
+                <ChallengeLeaderboard challengeId={activeChallenge.id} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {showChallengeCreator && event && (
+          <ChallengeCreator eventId={event.id} onCreated={() => {}} onClose={() => setShowChallengeCreator(false)} />
+        )}
+
         {showCarousel && (
           <div className="fixed inset-0 z-50">
             <Carousel photos={photos} onClose={() => setShowCarousel(false)} />
@@ -413,7 +467,7 @@ const EventPage = () =>{
         {/* Photos Grid */}
         <div className="mb-4">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            {photos.length === 0 ? t('event.noPhotosYet') : t('event.photosShared', { count: photos.length })}
+            {photos.length === 0 ? t('event.noPhotosYet') : `Fotos compartidas (${photos.length})`}
           </h2>
           {photos.length === 0 && !isExpired && (
             <p className="text-gray-600 dark:text-gray-400">{t('event.beFirst')}</p>
@@ -434,11 +488,21 @@ const EventPage = () =>{
                 selectionEnabled={selectMode}
                 selected={selectedIds.has(photo.id)}
                 onToggleSelect={() => toggleSelectPhoto(photo.id)}
+                eventId={event.id}
+                eventTheme={event.theme}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Live Wall Message Form */}
+      {!isExpired && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <LiveMessageForm eventId={event.id} />
+        </div>
+      )}
+
       <Footer />
     </div>
   )

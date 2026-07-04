@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Camera, Download, Square, CheckSquare } from 'lucide-react'
+import { Camera, Download, Square, CheckSquare } from 'lucide-react' // Sparkles removed - AI disabled
 import type { Photo } from '../../lib/insforge'
 import { getPhotoUrl, downloadPhotoBlob } from '../../lib/database'
 import { useAlert } from '../../contexts/AlertContext'
 import { cn } from '../../lib/utils'
+// import { PhotoEnhancer } from './PhotoEnhancer' // AI enhancement disabled
+import ReactionBar from './ReactionBar'
 
 interface PhotoCardProps {
   photo: Photo
   selectionEnabled?: boolean
   selected?: boolean
   onToggleSelect?: () => void
+  eventId?: string
+  eventTheme?: string
 }
 
-export function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }: PhotoCardProps) {
+export function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect, eventId, eventTheme }: PhotoCardProps) {
   const { t } = useTranslation()
   const [imageUrl, setImageUrl] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  // const [showEnhancer, setShowEnhancer] = useState(false) // AI disabled
   const { showAlert } = useAlert()
 
   useEffect(() => {
@@ -26,7 +31,7 @@ export function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }:
         return
       }
       try {
-        const url = await getPhotoUrl(photo.storage_path)
+        const url = photo.enhanced_url || await getPhotoUrl(photo.storage_path)
         setImageUrl(url)
       } catch {
         /* intentional fall through */
@@ -69,8 +74,8 @@ export function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }:
       {selectionEnabled && !loading && (
         <div className="absolute top-2 right-2">
           <span className={cn("inline-flex items-center px-2 py-1 rounded-md text-sm cursor-pointer", selected ? "bg-blue-600 text-white" : "bg-white text-gray-700 border") }>
-            {selected ? <CheckSquare className="h-4 w-4 mr-1" /> : <Square className="h-4 w-4 mr-1" />}
-            {selected ? 'Seleccionada' : 'Seleccionar'}
+            {selected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+            <span className="hidden sm:inline">{selected ? 'Seleccionada' : 'Seleccionar'}</span>
           </span>
         </div>
       )}
@@ -81,30 +86,56 @@ export function PhotoCard({ photo, selectionEnabled, selected, onToggleSelect }:
       )}
       {!loading && photo.status !== 'pending' && (
         <div className="p-4 pt-0">
-          <button
-            onClick={async () => {
-              try {
-                const blob = await downloadPhotoBlob(photo.storage_path)
-                const url = URL.createObjectURL(blob)
-                const parts = photo.storage_path.split('/')
-                const name = parts[parts.length - 1]
-                const a = document.createElement('a')
-                a.href = url
-                a.download = name
-                document.body.appendChild(a)
-                a.click()
-                document.body.removeChild(a)
-                URL.revokeObjectURL(url)
-              } catch {
-                showAlert(t('common.downloadError'), t('common.error'))
-              }
-            }}
-            className="inline-flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm"
-          >
-            <Download className="h-4 w-4 mr-1" /> Descargar
-          </button>
+          <div className="flex items-center gap-2 mb-2">
+            {/* AI enhance button disabled
+            {eventId && (
+              <button
+                onClick={() => setShowEnhancer(true)}
+                className="inline-flex items-center px-3 py-2.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-md text-sm"
+              >
+                <Sparkles className="h-4 w-4 mr-1" /> IA
+              </button>
+            )}
+            */}
+            <button
+              onClick={async () => {
+                try {
+                  const blob = await downloadPhotoBlob(photo.storage_path)
+                  const url = URL.createObjectURL(blob)
+                  const parts = photo.storage_path.split('/')
+                  const name = parts[parts.length - 1]
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = name
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                } catch {
+                  showAlert(t('common.downloadError'), t('common.error'))
+                }
+              }}
+              className="inline-flex items-center px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm"
+            >
+              <Download className="h-4 w-4 mr-1" /> Descargar
+            </button>
+          </div>
+          {eventId && <ReactionBar photoId={photo.id} eventId={eventId} />}
         </div>
       )}
+      {/* AI enhancement disabled
+      {showEnhancer && eventId && (
+        <PhotoEnhancer
+          isOpen={showEnhancer}
+          photoId={photo.id}
+          storagePath={photo.storage_path}
+          currentUrl={imageUrl}
+          eventTheme={eventTheme}
+          onEnhanced={(url) => setImageUrl(url)}
+          onClose={() => setShowEnhancer(false)}
+        />
+      )}
+      */}
     </div>
   )
 }

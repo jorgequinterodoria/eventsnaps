@@ -4,6 +4,7 @@ import { Music, Image, X } from 'lucide-react'
 import { getEventByCode, getEventPhotos } from '../lib/database'
 import { insforge } from '../lib/insforge'
 import { useInsforgeRealtime } from '../hooks/useInsforgeRealtime'
+import LiveWallOverlay from './event/LiveWallOverlay'
 import type { Photo, JukeboxQueueItem } from '../lib/insforge'
 
 const SLIDE_INTERVAL = 6000
@@ -170,17 +171,17 @@ export default function TVMode({ eventCode, onExit }: TVModeProps) {
       </div>
 
       {nowPlaying && (
-        <div className="absolute bottom-8 left-8 flex items-center gap-4">
+        <div className="absolute bottom-8 left-8 flex items-center gap-4 max-w-[60vw]">
           {nowPlaying.album_art && (
-            <img src={nowPlaying.album_art} alt="" className="w-16 h-16 rounded-lg shadow-lg object-cover" />
+            <img src={nowPlaying.album_art} alt="" className="w-16 h-16 rounded-lg shadow-lg object-cover flex-shrink-0" />
           )}
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 text-white/60 text-sm mb-1">
               <Music className="h-4 w-4" />
               {t('tv.nowPlaying')}
             </div>
-            <h3 className="text-2xl font-bold text-white">{nowPlaying.title}</h3>
-            <p className="text-lg text-white/70">{nowPlaying.artist}</p>
+            <h3 className="text-2xl font-bold text-white truncate">{nowPlaying.title}</h3>
+            <p className="text-lg text-white/70 truncate">{nowPlaying.artist}</p>
           </div>
         </div>
       )}
@@ -193,6 +194,8 @@ export default function TVMode({ eventCode, onExit }: TVModeProps) {
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/30 text-xs">
         {t('tv.pressEsc')}
       </div>
+
+      {eventId && <LiveWallOverlay eventId={eventId} />}
     </div>
   )
 }

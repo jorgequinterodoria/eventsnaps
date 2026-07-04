@@ -222,3 +222,90 @@ export async function downloadPhotoBlob(storagePath: string): Promise<Blob> {
   if (error) throw error
   return data
 }
+
+export async function createChallenge(eventId: string, title: string, description?: string, prize?: string) {
+  const { data, error } = await insforge.database
+    .from('challenges')
+    .insert({ event_id: eventId, title, description, prize })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getEventChallenges(eventId: string) {
+  const { data, error } = await insforge.database
+    .from('challenges')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function getChallengeLeaderboard(challengeId: string) {
+  const { data, error } = await insforge.database
+    .from('photos')
+    .select('id, storage_url, uploaded_by, uploaded_at')
+    .eq('challenge_id', challengeId)
+    .eq('status', 'approved')
+  if (error) throw error
+  return data || []
+}
+
+export async function addReaction(photoId: string, sessionId: string, emoji: string) {
+  const { data, error } = await insforge.database
+    .from('photo_reactions')
+    .upsert({ photo_id: photoId, session_id: sessionId, emoji }, { onConflict: 'photo_id,session_id,emoji' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function removeReaction(photoId: string, sessionId: string, emoji: string) {
+  const { error } = await insforge.database
+    .from('photo_reactions')
+    .delete()
+    .eq('photo_id', photoId)
+    .eq('session_id', sessionId)
+    .eq('emoji', emoji)
+  if (error) throw error
+}
+
+export async function getPhotoReactions(photoId: string) {
+  const { data, error } = await insforge.database
+    .from('photo_reactions')
+    .select('emoji')
+    .eq('photo_id', photoId)
+  if (error) throw error
+  // Group by emoji client-side since InsForge SDK may not support .group()
+  const grouped: Record<string, number> = {}
+  for (const r of data || []) {
+    grouped[r.emoji] = (grouped[r.emoji] || 0) + 1
+  }
+  return Object.entries(grouped).map(([emoji, count]) => ({ emoji, count }))
+}
+
+export async function sendLiveMessage(eventId: string, authorName: string, message: string) {
+  const { data, error } = await insforge.database
+    .from('live_messages')
+    .insert({ event_id: eventId, author_name: authorName, message })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getLiveMessages(eventId: string) {
+  const { data, error } = await insforge.database
+    .from('live_messages')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('is_approved', true)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) throw error
+  return data || []
+}

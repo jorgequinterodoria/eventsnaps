@@ -66,7 +66,9 @@ CREATE TABLE IF NOT EXISTS public.events (
   creator_id TEXT NOT NULL DEFAULT 'anonymous',
   moderation_enabled BOOLEAN NOT NULL DEFAULT false,
   status TEXT NOT NULL DEFAULT 'active',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  archived BOOLEAN DEFAULT false,
+  archive_expires_at TIMESTAMPTZ
 );
 
 -- Photos
@@ -78,7 +80,10 @@ CREATE TABLE IF NOT EXISTS public.photos (
   caption TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   uploaded_by TEXT NOT NULL DEFAULT 'anonymous',
-  uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  enhanced_url TEXT,
+  ai_metadata JSONB DEFAULT '{}',
+  challenge_id UUID REFERENCES public.challenges(id) ON DELETE SET NULL
 );
 
 -- Moderation
@@ -145,6 +150,49 @@ CREATE TABLE IF NOT EXISTS public.admin_config (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Challenges
+CREATE TABLE IF NOT EXISTS public.challenges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  prize TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Photo Reactions
+CREATE TABLE IF NOT EXISTS public.photo_reactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  photo_id UUID NOT NULL REFERENCES public.photos(id) ON DELETE CASCADE,
+  session_id TEXT NOT NULL,
+  emoji TEXT NOT NULL DEFAULT '❤️',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(photo_id, session_id, emoji)
+);
+CREATE INDEX IF NOT EXISTS idx_photo_reactions_photo_id ON public.photo_reactions(photo_id);
+
+-- Event Recaps (Reels/Aftermovies)
+CREATE TABLE IF NOT EXISTS public.event_recaps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'generating', 'ready', 'error')),
+  video_url TEXT,
+  music_track TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Live Messages (Live Wall)
+CREATE TABLE IF NOT EXISTS public.live_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  author_name TEXT NOT NULL DEFAULT 'Anonymous',
+  message TEXT NOT NULL,
+  is_approved BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_live_messages_event_id ON public.live_messages(event_id);
+
 -- RLS Enablement
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
@@ -156,6 +204,10 @@ ALTER TABLE public.jukebox_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.photo_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_recaps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.live_messages ENABLE ROW LEVEL SECURITY;
 
 -- Reseting old policies just in case
 DROP POLICY IF EXISTS "Public events access" ON public.events;
@@ -200,3 +252,9 @@ DROP POLICY IF EXISTS "Users read own subscription" ON public.user_subscriptions
 DROP POLICY IF EXISTS "Admin all subscriptions" ON public.user_subscriptions;
 CREATE POLICY "Users read own subscription" ON public.user_subscriptions FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admin all subscriptions" ON public.user_subscriptions FOR ALL USING (public.check_is_admin());
+
+-- New table policies
+CREATE POLICY "Public access" ON public.challenges FOR ALL USING (true);
+CREATE POLICY "Public access" ON public.photo_reactions FOR ALL USING (true);
+CREATE POLICY "Public access" ON public.event_recaps FOR ALL USING (true);
+CREATE POLICY "Public access" ON public.live_messages FOR ALL USING (true);

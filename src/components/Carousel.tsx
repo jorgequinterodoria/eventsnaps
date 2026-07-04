@@ -84,7 +84,7 @@ const Carousel = ({ photos, startIndex = 0, autoPlay = true, intervalMs = APP_CO
         />
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-4 z-20">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-2 sm:space-x-4 z-20">
         <button
           onClick={prev}
           className="px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center"

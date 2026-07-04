@@ -28,7 +28,8 @@ const AdminDashboard = () => {
   const { modLogs, loadingLogs, retrying, expandedEvents, loadModLogs, toggleEventExpand, retryGeminiErrors } = useAdminModeration()
   const {
     clientId, setClientId, clientSecret, setClientSecret,
-    youtubeKey, setYoutubeKey, geminiKey, setGeminiKey,
+    youtubeKey, setYoutubeKey,
+    // geminiKey, setGeminiKey,  // AI disabled
     loadConfig, saveConfig
   } = useAdminConfig()
 
@@ -128,7 +129,7 @@ const AdminDashboard = () => {
           clientId={clientId} setClientId={setClientId}
           clientSecret={clientSecret} setClientSecret={setClientSecret}
           youtubeKey={youtubeKey} setYoutubeKey={setYoutubeKey}
-          geminiKey={geminiKey} setGeminiKey={setGeminiKey}
+          // geminiKey={geminiKey} setGeminiKey={setGeminiKey}  // AI disabled
           saveConfig={saveConfig}
           retrying={retrying}
         />
