@@ -14,8 +14,8 @@ const Home = () => {
   const [session, setSession] = useState<{ user: { email: string } } | null>(null)
 
   useEffect(() => {
-    insforge.auth.getCurrentSession().then(({ data }) => {
-      setSession(data.session)
+    insforge.auth.getCurrentUser().then(({ data }) => {
+      setSession(data?.user ? { user: { email: data.user.email || '' } } : null)
     }).catch(console.error)
   }, [])
 

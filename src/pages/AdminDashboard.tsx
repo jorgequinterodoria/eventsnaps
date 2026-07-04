@@ -35,8 +35,8 @@ const AdminDashboard = () => {
 
   const checkAdminAndLoad = useCallback(async () => {
     try {
-      const { data: sessionData } = await insforge.auth.getCurrentSession()
-      if (!sessionData?.session) {
+      const { data: sessionData } = await insforge.auth.getCurrentUser()
+      if (!sessionData?.user) {
         navigate(ROUTES.AUTH)
         return
       }
@@ -44,7 +44,7 @@ const AdminDashboard = () => {
       const { data: profile } = await insforge.database
         .from('user_profiles')
         .select('*')
-        .eq('id', sessionData.session.user.id)
+        .eq('id', sessionData.user.id)
         .single()
         
       if (profile?.role !== 'admin') {

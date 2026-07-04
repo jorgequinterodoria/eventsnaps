@@ -18,8 +18,8 @@ const Navigation = () =>{
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data } = await insforge.auth.getCurrentSession()
-        setSession(data.session)
+        const { data } = await insforge.auth.getCurrentUser()
+        setSession(data?.user ? { user: { email: data.user.email || '' } } : null)
       } catch {
         // failed to get current session
       }

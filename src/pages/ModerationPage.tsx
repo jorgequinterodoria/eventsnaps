@@ -28,13 +28,13 @@ const ModerationPage = () => {
 
     try {
       // ── Auth guard ──────────────────────────────────────────────────────────
-      const { data: sessionData } = await insforge.auth.getCurrentSession()
-      if (!sessionData?.session) {
+      const { data: sessionData } = await insforge.auth.getCurrentUser()
+      if (!sessionData?.user) {
         showAlert(t('moderation.loginRequired'), t('moderation.noAccess'))
         navigate('/auth')
         return
       }
-      const userId = sessionData.session.user.id
+      const userId = sessionData.user.id
       setCurrentUserId(userId)
 
       const eventData = await getEventByCode(code.toUpperCase())

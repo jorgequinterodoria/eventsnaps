@@ -30,9 +30,9 @@ const CreateEvent = () =>{
   
   useEffect(() => {
     const fetchUser = async () => {
-      const { data } = await insforge.auth.getCurrentSession()
-      if (data?.session?.user) {
-        const userId = data.session.user.id
+      const { data } = await insforge.auth.getCurrentUser()
+      if (data?.user) {
+        const userId = data.user.id
         const { data: profile } = await insforge.database
           .from('user_profiles')
           .select('plan_id')
@@ -40,9 +40,9 @@ const CreateEvent = () =>{
           .single()
         
         if (profile) {
-          setUserProfile({ id: userId, plan_id: profile.plan_id, email: data.session.user.email || '', role: 'user', status: 'active', created_at: new Date().toISOString() })
+          setUserProfile({ id: userId, plan_id: profile.plan_id, email: data.user.email || '', role: 'user', status: 'active', created_at: new Date().toISOString() })
         } else {
-          setUserProfile({ id: userId, plan_id: null, email: data.session.user.email || '', role: 'user', status: 'active', created_at: new Date().toISOString() }) // Default if no profile found
+          setUserProfile({ id: userId, plan_id: null, email: data.user.email || '', role: 'user', status: 'active', created_at: new Date().toISOString() }) // Default if no profile found
         }
 
         // Resolve actual feature access (subscription → profile fallback)

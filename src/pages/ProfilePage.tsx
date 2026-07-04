@@ -26,8 +26,8 @@ export default function ProfilePage() {
 
   const loadProfile = useCallback(async () => {
     try {
-      const { data: sessionData } = await insforge.auth.getCurrentSession()
-      if (!sessionData?.session) {
+      const { data: sessionData } = await insforge.auth.getCurrentUser()
+      if (!sessionData?.user) {
         navigate('/auth')
         return
       }
@@ -35,7 +35,7 @@ export default function ProfilePage() {
       const { data } = await insforge.database
         .from('user_profiles')
         .select('*')
-        .eq('id', sessionData.session.user.id)
+        .eq('id', sessionData.user.id)
         .single()
       
       if (data) {
@@ -46,7 +46,7 @@ export default function ProfilePage() {
         setLocale(data.locale || 'es')
         setThemePreference(data.theme_preference || 'default')
         // Check if user has white_label feature
-        const features = await resolveUserFeatures(sessionData.session.user.id)
+        const features = await resolveUserFeatures(sessionData.user.id)
         setWhiteLabelAllowed(features.white_label)
       }
 
@@ -54,7 +54,7 @@ export default function ProfilePage() {
       const { data: eventsData } = await insforge.database
         .from('events')
         .select('*')
-        .eq('creator_id', sessionData.session.user.id)
+        .eq('creator_id', sessionData.user.id)
         .order('created_at', { ascending: false })
       
       if (eventsData) {
