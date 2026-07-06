@@ -9,14 +9,21 @@ export interface Track {
     provider: 'spotify' | 'youtube';
 }
 
+const FUNCTIONS_BASE = import.meta.env.VITE_INSFORGE_URL.replace('.us-east.insforge.app', '.function2.insforge.app')
+
 export async function searchTracks(query: string, provider: 'spotify' | 'youtube'): Promise<Track[]> {
     const action = provider === 'spotify' ? 'search_spotify' : 'search_youtube'
 
-    const { data, error } = await insforge.functions.invoke('music-search', {
-        body: { action, query }
+    const res = await fetch(`${FUNCTIONS_BASE}/music-search`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, query })
     })
+    const data = await res.json()
 
-    if (error) throw new Error(error.message || 'Search failed')
+    if (!res.ok) throw new Error(data?.error || 'Search failed')
     if (data?.error) throw new Error(data.error)
 
     return (data?.tracks || []) as Track[]

@@ -3,6 +3,8 @@ import { insforge } from '../lib/insforge'
 import type { Event } from '../lib/insforge'
 import type { Track } from '../lib/music-provider'
 
+const FUNCTIONS_BASE = import.meta.env.VITE_INSFORGE_URL.replace('.us-east.insforge.app', '.function2.insforge.app')
+
 export interface QueueItem {
     id: string
     event_id: string
@@ -61,10 +63,15 @@ export function useJukeboxQueue({ event, provider, showAlert, emit, on }: UseJuk
 
         let genre = 'unknown'
         if (provider === 'spotify') {
-            try {
-                const { data } = await insforge.functions.invoke('music-search', {
-                    body: { action: 'get_artist_genres', artists: [track.artist] },
-                })
+                try {
+                    const res = await fetch(`${FUNCTIONS_BASE}/music-search`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ action: 'get_artist_genres', artists: [track.artist] })
+                    })
+                    const data = await res.json()
                 if (data?.genres?.[track.artist] && data.genres[track.artist] !== 'unknown') {
                     genre = data.genres[track.artist]
                 }
