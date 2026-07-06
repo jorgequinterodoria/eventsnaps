@@ -266,12 +266,12 @@ const CreateEvent = () =>{
             <div className="flex items-center justify-center">
               <QRCode url={`https://tusfotosevento.netlify.app/event/${createdCode}`} size={256} caption={`Código: ${createdCode}`} />
             </div>
-            <div className="mt-3 text-center">
+            <div className="mt-3 text-center px-4">
               <a
                 href={`https://tusfotosevento.netlify.app/event/${createdCode}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-500"
+                className="text-sm text-blue-600 hover:text-blue-500 break-all"
               >
                 https://tusfotosevento.netlify.app/event/{createdCode}
               </a>

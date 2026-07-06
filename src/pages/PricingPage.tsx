@@ -66,7 +66,7 @@ const PricingPage = () => {
               return (
                 <div
                   key={plan.id}
-                  className={`rounded-2xl shadow-sm p-8 flex flex-col relative transition-all
+                  className={`rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col relative transition-all overflow-hidden
                     ${isPro
                       ? 'bg-gradient-to-b from-blue-600 to-indigo-700 border border-blue-500 md:-translate-y-4 shadow-xl'
                       : isTrial
@@ -167,7 +167,7 @@ const PricingPage = () => {
               <ol className="list-decimal list-inside space-y-3 pl-2">
                 <li>Abre tu aplicación de <strong>Nequi</strong>.</li>
                 <li>Transfiere <strong className="text-xl">$100.000 COP</strong> al número:{' '}
-                  <span className="font-mono text-xl bg-purple-200 px-2 py-1 rounded select-all mx-1">300 000 0000</span>
+                  <span className="font-mono text-lg sm:text-xl bg-purple-200 px-2 py-1 rounded select-all mx-1">300 000 0000</span>
                 </li>
                 <li>Envía el comprobante al correo <strong>jquintedori@gmail.com</strong> indicando tu correo registrado en EventSnaps.</li>
               </ol>

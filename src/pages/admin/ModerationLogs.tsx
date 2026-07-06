@@ -75,7 +75,7 @@ export const ModerationLogs = ({
                     <span className="font-bold text-gray-900 font-mono tracking-wider">{event.code}</span>
                     <span className="text-xs text-gray-500">{t('common.photosInQueue', { count: rows.length })}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs font-medium">
+                  <div className="flex items-center gap-3 text-xs font-medium flex-wrap">
                     {geminiErrors > 0 && (
                       <span className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-200">
                         <AlertTriangle className="h-3 w-3" />
@@ -89,8 +89,8 @@ export const ModerationLogs = ({
                 </button>
 
                 {isOpen && (
-                  <div className="divide-y divide-gray-100">
-                    <div className="grid grid-cols-12 gap-2 px-5 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-white">
+                  <div className="divide-y divide-gray-100 overflow-x-auto">
+                    <div className="grid grid-cols-12 gap-2 px-5 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-white min-w-[600px]">
                       <span className="col-span-4">Foto / Caption</span>
                       <span className="col-span-2">Estado</span>
                       <span className="col-span-2">IA Gemini</span>

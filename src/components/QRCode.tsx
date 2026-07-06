@@ -15,7 +15,7 @@ const QRCode = ({ url, size = APP_CONFIG.UI.QR_CODE_SIZE_DEFAULT, caption }: QRC
 
   return (
     <div className="flex flex-col items-center">
-      <img src={src} alt="QR" width={size} height={size} className="rounded-lg shadow-md bg-white" />
+      <img src={src} alt="QR" className="rounded-lg shadow-md bg-white max-w-full h-auto" style={{ maxWidth: size }} />
       {caption && (
         <p className="mt-2 text-sm text-gray-600 text-center">{caption}</p>
       )}

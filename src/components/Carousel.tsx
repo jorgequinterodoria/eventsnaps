@@ -96,7 +96,7 @@ const Carousel = ({ photos, startIndex = 0, autoPlay = true, intervalMs = APP_CO
           className="px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center space-x-2"
         >
           {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          <span>{isPlaying ? 'Pausar' : 'Reproducir'}</span>
+          <span className="hidden sm:inline">{isPlaying ? 'Pausar' : 'Reproducir'}</span>
         </button>
         <button
           onClick={next}
