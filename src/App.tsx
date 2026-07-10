@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navigation from './components/Navigation';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import Home from './pages/Home';
 import EventPage from './pages/EventPage'
 import CreateEvent from './pages/CreateEvent';
@@ -15,6 +16,7 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        <OfflineIndicator />
         <Routes>
           <Route path={ROUTES.HOME} element={
             <>

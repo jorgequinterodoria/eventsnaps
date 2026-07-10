@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { sendLiveMessage, getLiveMessages } from '../lib/database'
 import { useInsforgeRealtime } from './useInsforgeRealtime'
 import type { LiveMessage } from '../lib/insforge'
+import { enqueueMessage } from '../lib/offline-queue'
 
 export function useLiveMessages(eventId?: string) {
   const [messages, setMessages] = useState<LiveMessage[]>([])
@@ -16,6 +17,10 @@ export function useLiveMessages(eventId?: string) {
 
   const sendMessage = async (authorName: string, message: string) => {
     if (!eventId) return
+    if (!navigator.onLine) {
+      enqueueMessage(eventId, authorName, message)
+      return Promise.resolve()
+    }
     return sendLiveMessage(eventId, authorName, message)
   }
 

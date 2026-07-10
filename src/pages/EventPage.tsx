@@ -170,10 +170,12 @@ const EventPage = () =>{
       >
         {coverUrl && <div className="absolute inset-0 bg-black/40" />}
         <div className="relative z-10 text-center max-w-2xl">
-          <h1 className="text-3xl font-bold mb-2 text-white">{headline}</h1>
-          {subheadline && <p className="text-xl mb-8 text-white/80">{subheadline}</p>}
-          {!coverUrl && <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">{headline}</h1>}
-          {!coverUrl && subheadline && <p className="text-xl mb-8 text-gray-600 dark:text-gray-400">{subheadline}</p>}
+          <h1 className={`text-3xl font-bold mb-2 ${coverUrl ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{headline}</h1>
+          {subheadline && (
+            <p className={`text-xl mb-8 ${coverUrl ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'}`}>
+              {subheadline}
+            </p>
+          )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl mt-8">
             {showGalleryBtn && (

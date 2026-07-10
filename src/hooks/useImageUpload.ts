@@ -3,6 +3,7 @@ import { uploadPhoto } from '../lib/database'
 import { checkFeature } from '../lib/subscription'
 // import { insforge } from '../lib/insforge' // AI moderation disabled
 import type { Event as EventType } from '../lib/insforge'
+import { enqueuePhoto } from '../lib/offline-queue'
 
 interface UseImageUploadProps {
     event: EventType | null
@@ -46,36 +47,32 @@ export function useImageUpload({ event, addPhoto, emit, showAlert }: UseImageUpl
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i]
-                if (file.type.startsWith('image/')) {
-                    const photo = await uploadPhoto(event.id, file)
-                    addPhoto(photo)
-                    emit('photo:uploaded', { eventId: event.id, photoId: photo.id })
+                if (!file.type.startsWith('image/')) continue
 
-                    // AI moderation disabled - keep code for future use
-                    // if (event.moderation_enabled && photo.status === 'pending') {
-                    //     moderatePhoto(photo.storage_path).then((result) => {
-                    //         if (result?.suggestion) {
-                    //             const newStatus = result.suggestion === 'reject' ? 'rejected' : 'approved'
-                    //             insforge.database
-                    //                 .from('photos')
-                    //                 .update({ status: newStatus })
-                    //                 .eq('id', photo.id)
-                    //                 .then(() => {
-                    //                     insforge.database
-                    //                         .from('moderation_queues')
-                    //                         .update({ processed: true, gemini_suggestion: result.suggestion, confidence_score: result.confidence })
-                    //                         .eq('photo_id', photo.id)
-                    //                         .then(() => {
-                    //                             addPhoto({ ...photo, status: newStatus })
-                    //                         })
-                    //                 })
-                    //         }
-                    //     })
-                    // }
+                if (!navigator.onLine) {
+                    const id = enqueuePhoto(event.id, file)
+                    addPhoto({
+                        id,
+                        event_id: event.id,
+                        storage_path: `offline/${id}`,
+                        storage_url: URL.createObjectURL(file),
+                        enhanced_url: null,
+                        ai_metadata: null,
+                        caption: null,
+                        status: 'approved' as const,
+                        uploaded_by: 'anonymous',
+                        uploaded_at: new Date().toISOString()
+                    })
+                    showAlert(`${file.name} se agregó a la cola offline`, 'Offline')
+                    continue
                 }
+
+                const photo = await uploadPhoto(event.id, file)
+                addPhoto(photo)
+                emit('photo:uploaded', { eventId: event.id, photoId: photo.id })
             }
         } catch {
-            showAlert('Failed to upload photo. Please try again.', 'Error')
+            showAlert('Error al subir foto. Intenta de nuevo.', 'Error')
         } finally {
             setIsUploading(false)
         }
