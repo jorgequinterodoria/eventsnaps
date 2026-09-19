@@ -94,7 +94,7 @@ export async function resolveUserFeatures(userId: string): Promise<PlanFeatures>
         .from('user_profiles')
         .select('plan_id')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
     if (profile?.plan_id) {
         return getPlanFeatures(profile.plan_id)
@@ -219,7 +219,7 @@ export async function getBrandingConfig(creatorId: string): Promise<BrandingConf
             .from('user_profiles')
             .select('full_name, custom_logo_url')
             .eq('id', creatorId)
-            .single()
+            .maybeSingle()
 
         return {
             showDJLogo: true,

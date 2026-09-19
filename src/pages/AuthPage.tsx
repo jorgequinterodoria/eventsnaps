@@ -17,7 +17,7 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [trialActivated, setTrialActivated] = useState(false)
-  
+
   const navigate = useNavigate()
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -28,11 +28,21 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        const { error } = await insforge.auth.signInWithPassword({
+        const { data: loginData, error } = await insforge.auth.signInWithPassword({
           email,
           password
         })
         if (error) throw error
+        if (loginData.user) {
+          const { error: profileError } = await insforge.database.from('user_profiles').upsert({
+            id: loginData.user.id,
+            email,
+            role: email === 'jquintedori@gmail.com' ? 'admin' : 'user',
+            plan_id: 'basic',
+            status: 'active'
+          })
+          if (profileError) throw profileError
+        }
         navigate(ROUTES.CREATE_EVENT)
       } else {
         const { data, error } = await insforge.auth.signUp({
@@ -42,6 +52,14 @@ export default function AuthPage() {
         if (error) throw error
         // Activate 24h trial for new users
         if (data?.user?.id) {
+          const { error: profileError } = await insforge.database.from('user_profiles').upsert({
+            id: data.user.id,
+            email,
+            role: email === 'jquintedori@gmail.com' ? 'admin' : 'user',
+            plan_id: 'basic',
+            status: 'active'
+          })
+          if (profileError) throw profileError
           const trial = await activateTrial(data.user.id)
           if (trial.activated) {
             setTrialActivated(true)
@@ -94,12 +112,12 @@ export default function AuthPage() {
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
-            <button 
+            <button
               onClick={() => {
                 setIsLogin(!isLogin)
                 setError(null)
                 setMessage(null)
-              }} 
+              }}
               className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
             >
               {isLogin ? t('auth.registerLink') : t('auth.loginLink')}

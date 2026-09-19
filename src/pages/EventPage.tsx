@@ -31,7 +31,7 @@ import ChallengeLeaderboard from '../components/event/ChallengeLeaderboard'
 import LiveMessageForm from '../components/event/LiveMessageForm'
 import { useChallenges } from '../hooks/useChallenges'
 
-const EventPage = () =>{
+const EventPage = () => {
   const { t } = useTranslation()
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
@@ -40,11 +40,11 @@ const EventPage = () =>{
   const { showAlert } = useAlert()
   const { photos, setCurrentEvent, setPhotos, setLoading, setError, addPhoto } = useStore()
   const [showChallengeCreator, setShowChallengeCreator] = useState(false)
-  
+
   const [copied, setCopied] = useState(false)
   const [event, setEvent] = useState<EventType | null>(null)
   const [showCarousel, setShowCarousel] = useState(false)
-  
+
   const [showLandingEditor, setShowLandingEditor] = useState(false)
   const [jukeboxActive, setJukeboxActive] = useState(false)
   const [mode, setMode] = useState<'landing' | 'photos' | 'jukebox'>('photos')
@@ -57,17 +57,17 @@ const EventPage = () =>{
 
   const loadEventData = useCallback(async () => {
     if (!code) return
-    
+
     setLoading(true)
     try {
       const eventData = await getEventByCode(code.toUpperCase())
       if (eventData) {
         setEvent(eventData)
         setCurrentEvent(eventData)
-        
+
         let proStatus = false
         if (eventData.creator_id && eventData.creator_id !== 'anonymous') {
-          const { data: profile } = await insforge.database.from('user_profiles').select('plan_id, full_name, instagram_username').eq('id', eventData.creator_id).single()
+          const { data: profile } = await insforge.database.from('user_profiles').select('plan_id, full_name, instagram_username').eq('id', eventData.creator_id).maybeSingle()
           // Use actual feature flag instead of raw plan_id comparison
           const features = await resolveUserFeatures(eventData.creator_id)
           proStatus = features.gallery
@@ -77,10 +77,10 @@ const EventPage = () =>{
           setBranding(brandingCfg)
         }
         setIsCreatorPro(proStatus)
-        
+
         const eventPhotos = await getEventPhotos(eventData.id)
         setPhotos(eventPhotos)
-        
+
         const { data: jb } = await insforge.database.from('jukebox_settings').select('*').eq('event_id', eventData.id).single()
         if (jb?.is_active) {
           setJukeboxActive(true)
@@ -176,10 +176,10 @@ const EventPage = () =>{
               {subheadline}
             </p>
           )}
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl mt-8">
             {showGalleryBtn && (
-              <button 
+              <button
                 onClick={() => setMode('photos')}
                 className="flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-500"
               >
@@ -192,7 +192,7 @@ const EventPage = () =>{
             )}
 
             {showJukeboxBtn && (
-              <button 
+              <button
                 onClick={() => setMode('jukebox')}
                 className="flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-green-500"
               >
@@ -235,29 +235,29 @@ const EventPage = () =>{
   }
 
   if (mode === 'jukebox') {
-      return (
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-             <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 p-4 flex items-center">
-                 {isCreatorPro && (
-                   <>
-                      <button onClick={() => setMode('landing')} className="mr-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-                         <ArrowLeft className="h-6 w-6" />
-                     </button>
-                      <h1 className="text-xl font-bold">{t('event.backToMenu')}</h1>
-                    </>
-                  )}
-                  {!isCreatorPro && (
-                    <>
-                      <button onClick={() => navigate('/')} className="mr-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-                          <ArrowLeft className="h-6 w-6" />
-                      </button>
-                      <h1 className="text-xl font-bold">{t('event.backToHome')}</h1>
-                   </>
-                 )}
-             </div>
-             <JukeboxPage event={event} creatorProfile={creatorProfile} />
-          </div>
-      )
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 p-4 flex items-center">
+          {isCreatorPro && (
+            <>
+              <button onClick={() => setMode('landing')} className="mr-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+              <h1 className="text-xl font-bold">{t('event.backToMenu')}</h1>
+            </>
+          )}
+          {!isCreatorPro && (
+            <>
+              <button onClick={() => navigate('/')} className="mr-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+              <h1 className="text-xl font-bold">{t('event.backToHome')}</h1>
+            </>
+          )}
+        </div>
+        <JukeboxPage event={event} creatorProfile={creatorProfile} />
+      </div>
+    )
   }
 
   return (
@@ -273,48 +273,48 @@ const EventPage = () =>{
               <ArrowLeft className="h-5 w-5 mr-2" />
               {(jukeboxActive && isCreatorPro) ? t('event.backToMenu') : t('event.backToHome')}
             </button>
-            
+
             <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap">
               <div className="hidden sm:flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Clock className="h-4 w-4 mr-1" />
                 {formatTimeRemaining(event.expires_at)}
               </div>
-              
+
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                 <Users className="h-4 w-4 mr-1" />
                 {visiblePhotos.length} fotos
               </div>
-            
-            {event.moderation_enabled && (
-              <div className="hidden sm:flex items-center text-sm text-gray-600 dark:text-gray-400">
-                <Shield className="h-4 w-4 mr-1" />
-                {t('event.withModeration')}
-              </div>
-            )}
 
-            <EventActionButtons
-              event={event}
-              visiblePhotosCount={visiblePhotos.length}
-              selectMode={selectMode}
-              selectedIdsCount={selectedIds.size}
-              isDownloadingZip={isDownloadingZip}
-              isDownloadingSelected={isDownloadingSelected}
-              onNavigateModerate={() => navigate(`/moderate/${code}`)}
-              onDownloadAllAsZip={downloadAllAsZip}
-              onToggleSelectMode={toggleSelectMode}
-              onDownloadSelectedZip={downloadSelectedZip}
-              onSelectAll={selectAll}
-              onDisableSelectMode={disableSelectMode}
-            />
-            {visiblePhotos.length > 0 && (
-              <button
-                onClick={() => navigate(`/event/${code}?mode=tv`)}
-                className="flex items-center px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
-                title={t('event.tvMode')}
-              >
-                <Monitor className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">{t('event.tvMode')}</span>
-              </button>
-            )}
+              {event.moderation_enabled && (
+                <div className="hidden sm:flex items-center text-sm text-gray-600 dark:text-gray-400">
+                  <Shield className="h-4 w-4 mr-1" />
+                  {t('event.withModeration')}
+                </div>
+              )}
+
+              <EventActionButtons
+                event={event}
+                visiblePhotosCount={visiblePhotos.length}
+                selectMode={selectMode}
+                selectedIdsCount={selectedIds.size}
+                isDownloadingZip={isDownloadingZip}
+                isDownloadingSelected={isDownloadingSelected}
+                onNavigateModerate={() => navigate(`/moderate/${code}`)}
+                onDownloadAllAsZip={downloadAllAsZip}
+                onToggleSelectMode={toggleSelectMode}
+                onDownloadSelectedZip={downloadSelectedZip}
+                onSelectAll={selectAll}
+                onDisableSelectMode={disableSelectMode}
+              />
+              {visiblePhotos.length > 0 && (
+                <button
+                  onClick={() => navigate(`/event/${code}?mode=tv`)}
+                  className="flex items-center px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
+                  title={t('event.tvMode')}
+                >
+                  <Monitor className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">{t('event.tvMode')}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -403,7 +403,7 @@ const EventPage = () =>{
         )}
 
         {showChallengeCreator && event && (
-          <ChallengeCreator eventId={event.id} onCreated={() => {}} onClose={() => setShowChallengeCreator(false)} />
+          <ChallengeCreator eventId={event.id} onCreated={() => { }} onClose={() => setShowChallengeCreator(false)} />
         )}
 
         {showCarousel && (
