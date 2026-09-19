@@ -38,7 +38,6 @@ export default function AuthPage() {
             id: loginData.user.id,
             email,
             role: email === 'jquintedori@gmail.com' ? 'admin' : 'user',
-            plan_id: 'basic',
             status: 'active'
           })
           if (profileError) throw profileError

@@ -83,6 +83,17 @@ async function getPlanFeatures(planId: string): Promise<PlanFeatures> {
  *  3. Final fallback: DEFAULT_FEATURES
  */
 export async function resolveUserFeatures(userId: string): Promise<PlanFeatures> {
+    // Administrators need access to the full product surface regardless of billing state.
+    const { data: profile } = await insforge.database
+        .from('user_profiles')
+        .select('plan_id, role')
+        .eq('id', userId)
+        .maybeSingle()
+
+    if (profile?.role === 'admin') {
+        return getPlanFeatures('pro')
+    }
+
     // Try subscription first
     const subscription = await getUserSubscription(userId)
     if (subscription?.plans?.features) {
@@ -90,12 +101,6 @@ export async function resolveUserFeatures(userId: string): Promise<PlanFeatures>
     }
 
     // Fallback: read plan_id from user_profiles
-    const { data: profile } = await insforge.database
-        .from('user_profiles')
-        .select('plan_id')
-        .eq('id', userId)
-        .maybeSingle()
-
     if (profile?.plan_id) {
         return getPlanFeatures(profile.plan_id)
     }
