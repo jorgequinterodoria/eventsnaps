@@ -26,15 +26,25 @@ Aplicación para compartir fotos de eventos con código de acceso de 6 caractere
 Crear `.env.local` en la raíz del proyecto con:
 
 ```
-VITE_SUPABASE_URL=https://<your-project>.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon-key>
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
 GEMINI_API_KEY=<gemini-key>
 ```
+
+`SUPABASE_SECRET_KEY` solo se usa para tareas administrativas locales y nunca debe
+usarse en código del navegador.
 
 ## Base de datos y Storage
 - Tablas principales: `events`, `photos`, `moderation_queues`, `moderation_actions`
 - Bucket de Storage: `photos`
-- En desarrollo, RLS está deshabilitado para evitar bloqueos de permisos mientras se prueba el flujo.
+- El bucket público de Storage debe llamarse `photos`.
+- Para preparar un proyecto Supabase nuevo, ejecuta `supabase/migrations/20260918000000_eventsnaps_schema.sql` en el SQL Editor.
+- Después importa los datos del backup con:
+
+```bash
+set -a; source .env.local; set +a
+node scripts/import-backup-to-supabase.mjs
+```
 
 Si necesitas recrear el esquema, revisa los archivos en `supabase/migrations/` y aplícalos con la CLI de Supabase o el panel.
 

@@ -77,7 +77,6 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
   const fileName = `${Date.now()}-${file.name}`
   const filePath = `events/${eventId}/${fileName}`
 
-  // Upload using native InsForge storage SDK
   const { data: uploadData, error: uploadError } = await insforge.storage
     .from('photos')
     .upload(filePath, file)
@@ -95,8 +94,8 @@ export async function uploadPhoto(eventId: string, file: File, caption?: string,
     .from('photos')
     .insert({
       event_id: eventId,
-      storage_path: uploadData.key || filePath,
-      storage_url: uploadData.url || null,
+      storage_path: uploadData.path || filePath,
+      storage_url: insforge.storage.from('photos').getPublicUrl(uploadData.path || filePath).data.publicUrl,
       caption: caption || null,
       uploaded_by: uploaderId,
       status: initialStatus
@@ -192,8 +191,7 @@ export async function getPhotoUrl(storagePath: string): Promise<string> {
   }
 
   // Fallback: construct URL from base URL + bucket + path
-  const baseUrl = import.meta.env.VITE_INSFORGE_URL
-  return `${baseUrl}/api/storage/buckets/photos/objects/${encodeURIComponent(storagePath)}`
+  return insforge.storage.from('photos').getPublicUrl(storagePath).data.publicUrl
 }
 
 export async function downloadPhotoBlob(storagePath: string): Promise<Blob> {

@@ -1,0 +1,3389 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 9VzoIym3LgJN07wh8MmsJoVrlgm9iZpjhnfQPrcNRedJMc5s7H1XA2Y1im9qq1Y
+
+-- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
+-- Dumped by pg_dump version 18.1 (Debian 18.1-1.pgdg13+2)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+DROP EVENT TRIGGER IF EXISTS create_policies_on_table_create;
+DROP EVENT TRIGGER IF EXISTS create_policies_on_rls_enable;
+DROP POLICY IF EXISTS project_admin_policy ON public.user_subscriptions;
+DROP POLICY IF EXISTS project_admin_policy ON public.user_profiles;
+DROP POLICY IF EXISTS project_admin_policy ON public.plans;
+DROP POLICY IF EXISTS project_admin_policy ON public.photos;
+DROP POLICY IF EXISTS project_admin_policy ON public.moderation_queues;
+DROP POLICY IF EXISTS project_admin_policy ON public.moderation_actions;
+DROP POLICY IF EXISTS project_admin_policy ON public.jukebox_settings;
+DROP POLICY IF EXISTS project_admin_policy ON public.jukebox_queue;
+DROP POLICY IF EXISTS project_admin_policy ON public.events;
+DROP POLICY IF EXISTS project_admin_policy ON public.admin_config;
+DROP POLICY IF EXISTS "Users view own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users update own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users read own subscription" ON public.user_subscriptions;
+DROP POLICY IF EXISTS "Super admin all profiles" ON public.user_profiles;
+DROP POLICY IF EXISTS "Public plans" ON public.plans;
+DROP POLICY IF EXISTS "Public photos access" ON public.photos;
+DROP POLICY IF EXISTS "Public moderation queue" ON public.moderation_queues;
+DROP POLICY IF EXISTS "Public moderation action" ON public.moderation_actions;
+DROP POLICY IF EXISTS "Public jukebox settings" ON public.jukebox_settings;
+DROP POLICY IF EXISTS "Public jukebox queue" ON public.jukebox_queue;
+DROP POLICY IF EXISTS "Public events access" ON public.events;
+DROP POLICY IF EXISTS "Public admin_config" ON public.admin_config;
+DROP POLICY IF EXISTS "Admin all subscriptions" ON public.user_subscriptions;
+DROP POLICY IF EXISTS project_admin_policy ON auth.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON auth.users;
+DROP POLICY IF EXISTS "Public can view user profiles" ON auth.users;
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS objects_uploaded_by_fkey;
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS objects_bucket_fkey;
+ALTER TABLE IF EXISTS ONLY schedules.job_logs DROP CONSTRAINT IF EXISTS job_logs_job_id_fkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages DROP CONSTRAINT IF EXISTS messages_channel_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_subscriptions DROP CONSTRAINT IF EXISTS user_subscriptions_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_subscriptions DROP CONSTRAINT IF EXISTS user_subscriptions_plan_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_plan_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.photos DROP CONSTRAINT IF EXISTS photos_event_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.moderation_queues DROP CONSTRAINT IF EXISTS moderation_queues_photo_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.moderation_actions DROP CONSTRAINT IF EXISTS moderation_actions_photo_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.jukebox_settings DROP CONSTRAINT IF EXISTS jukebox_settings_event_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.jukebox_queue DROP CONSTRAINT IF EXISTS jukebox_queue_event_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.user_providers DROP CONSTRAINT IF EXISTS user_providers_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.oauth_configs DROP CONSTRAINT IF EXISTS oauth_configs_secret_id_fkey;
+ALTER TABLE IF EXISTS ONLY auth.user_providers DROP CONSTRAINT IF EXISTS _account_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY ai.usage DROP CONSTRAINT IF EXISTS usage_config_id_fkey;
+DROP TRIGGER IF EXISTS update_system_deployments_updated_at ON system.deployments;
+DROP TRIGGER IF EXISTS update_secrets_updated_at ON system.secrets;
+DROP TRIGGER IF EXISTS update_audit_logs_updated_at ON system.audit_logs;
+DROP TRIGGER IF EXISTS trg_jobs_updated_at ON schedules.jobs;
+DROP TRIGGER IF EXISTS update_channels_updated_at ON realtime.channels;
+DROP TRIGGER IF EXISTS trg_message_notify ON realtime.messages;
+DROP TRIGGER IF EXISTS update_definitions_updated_at ON functions.definitions;
+DROP TRIGGER IF EXISTS update_oauth_configs_updated_at ON auth.oauth_configs;
+DROP TRIGGER IF EXISTS update_email_otps_updated_at ON auth.email_otps;
+DROP TRIGGER IF EXISTS update_configs_updated_at ON auth.configs;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP INDEX IF EXISTS system.idx_secrets_name;
+DROP INDEX IF EXISTS system.idx_mcp_usage_created_at;
+DROP INDEX IF EXISTS system.idx_deployments_status;
+DROP INDEX IF EXISTS system.idx_deployments_provider;
+DROP INDEX IF EXISTS system.idx_deployments_created_at;
+DROP INDEX IF EXISTS system.idx_audit_logs_module;
+DROP INDEX IF EXISTS system.idx_audit_logs_created_at;
+DROP INDEX IF EXISTS system.idx_audit_logs_actor;
+DROP INDEX IF EXISTS storage.idx_storage_uploaded_by;
+DROP INDEX IF EXISTS schedules.idx_jobs_is_active;
+DROP INDEX IF EXISTS schedules.idx_jobs_cron_job_id;
+DROP INDEX IF EXISTS schedules.idx_job_logs_job_id;
+DROP INDEX IF EXISTS schedules.idx_job_logs_executed_at;
+DROP INDEX IF EXISTS realtime.idx_realtime_messages_sender;
+DROP INDEX IF EXISTS realtime.idx_realtime_messages_event_name;
+DROP INDEX IF EXISTS realtime.idx_realtime_messages_created_at;
+DROP INDEX IF EXISTS realtime.idx_realtime_messages_channel_name;
+DROP INDEX IF EXISTS realtime.idx_realtime_messages_channel_id;
+DROP INDEX IF EXISTS realtime.idx_realtime_channels_pattern;
+DROP INDEX IF EXISTS realtime.idx_realtime_channels_enabled;
+DROP INDEX IF EXISTS functions.idx_function_deployments_status;
+DROP INDEX IF EXISTS functions.idx_function_deployments_created;
+DROP INDEX IF EXISTS auth.idx_oauth_configs_provider;
+DROP INDEX IF EXISTS auth.idx_email_otps_otp_hash;
+DROP INDEX IF EXISTS auth.idx_email_otps_expires_at;
+DROP INDEX IF EXISTS auth.idx_email_otps_email_purpose;
+DROP INDEX IF EXISTS auth.idx_auth_configs_singleton;
+DROP INDEX IF EXISTS ai.idx_ai_usage_model_id;
+DROP INDEX IF EXISTS ai.idx_ai_usage_created_at;
+DROP INDEX IF EXISTS ai.idx_ai_usage_config_id;
+DROP INDEX IF EXISTS ai.idx_ai_configs_output_modality;
+DROP INDEX IF EXISTS ai.idx_ai_configs_input_modality;
+ALTER TABLE IF EXISTS ONLY system.migrations DROP CONSTRAINT IF EXISTS migrations_pkey;
+ALTER TABLE IF EXISTS ONLY system.deployments DROP CONSTRAINT IF EXISTS deployments_provider_deployment_id_key;
+ALTER TABLE IF EXISTS ONLY system.deployments DROP CONSTRAINT IF EXISTS deployments_pkey;
+ALTER TABLE IF EXISTS ONLY system.secrets DROP CONSTRAINT IF EXISTS _secrets_pkey;
+ALTER TABLE IF EXISTS ONLY system.secrets DROP CONSTRAINT IF EXISTS _secrets_name_key;
+ALTER TABLE IF EXISTS ONLY system.mcp_usage DROP CONSTRAINT IF EXISTS _mcp_usage_pkey;
+ALTER TABLE IF EXISTS ONLY system.audit_logs DROP CONSTRAINT IF EXISTS _audit_logs_pkey;
+ALTER TABLE IF EXISTS ONLY storage.objects DROP CONSTRAINT IF EXISTS _storage_pkey;
+ALTER TABLE IF EXISTS ONLY storage.buckets DROP CONSTRAINT IF EXISTS _storage_buckets_pkey;
+ALTER TABLE IF EXISTS ONLY schedules.jobs DROP CONSTRAINT IF EXISTS jobs_pkey;
+ALTER TABLE IF EXISTS ONLY schedules.job_logs DROP CONSTRAINT IF EXISTS job_logs_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.messages DROP CONSTRAINT IF EXISTS messages_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.channels DROP CONSTRAINT IF EXISTS channels_pkey;
+ALTER TABLE IF EXISTS ONLY realtime.channels DROP CONSTRAINT IF EXISTS channels_pattern_key;
+ALTER TABLE IF EXISTS ONLY public.user_subscriptions DROP CONSTRAINT IF EXISTS user_subscriptions_pkey;
+ALTER TABLE IF EXISTS ONLY public.user_profiles DROP CONSTRAINT IF EXISTS user_profiles_pkey;
+ALTER TABLE IF EXISTS ONLY public.plans DROP CONSTRAINT IF EXISTS plans_pkey;
+ALTER TABLE IF EXISTS ONLY public.photos DROP CONSTRAINT IF EXISTS photos_pkey;
+ALTER TABLE IF EXISTS ONLY public.moderation_queues DROP CONSTRAINT IF EXISTS moderation_queues_pkey;
+ALTER TABLE IF EXISTS ONLY public.moderation_actions DROP CONSTRAINT IF EXISTS moderation_actions_pkey;
+ALTER TABLE IF EXISTS ONLY public.jukebox_settings DROP CONSTRAINT IF EXISTS jukebox_settings_pkey;
+ALTER TABLE IF EXISTS ONLY public.jukebox_queue DROP CONSTRAINT IF EXISTS jukebox_queue_pkey;
+ALTER TABLE IF EXISTS ONLY public.events DROP CONSTRAINT IF EXISTS events_pkey;
+ALTER TABLE IF EXISTS ONLY public.events DROP CONSTRAINT IF EXISTS events_code_key;
+ALTER TABLE IF EXISTS ONLY public.admin_config DROP CONSTRAINT IF EXISTS admin_config_pkey;
+ALTER TABLE IF EXISTS ONLY functions.deployments DROP CONSTRAINT IF EXISTS deployments_pkey;
+ALTER TABLE IF EXISTS ONLY functions.definitions DROP CONSTRAINT IF EXISTS _edge_functions_slug_key;
+ALTER TABLE IF EXISTS ONLY functions.definitions DROP CONSTRAINT IF EXISTS _edge_functions_pkey;
+ALTER TABLE IF EXISTS ONLY auth.users DROP CONSTRAINT IF EXISTS _user_pkey;
+ALTER TABLE IF EXISTS ONLY auth.users DROP CONSTRAINT IF EXISTS _user_email_key;
+ALTER TABLE IF EXISTS ONLY auth.oauth_configs DROP CONSTRAINT IF EXISTS _oauth_configs_provider_key;
+ALTER TABLE IF EXISTS ONLY auth.oauth_configs DROP CONSTRAINT IF EXISTS _oauth_configs_pkey;
+ALTER TABLE IF EXISTS ONLY auth.email_otps DROP CONSTRAINT IF EXISTS _email_otps_pkey;
+ALTER TABLE IF EXISTS ONLY auth.email_otps DROP CONSTRAINT IF EXISTS _email_otps_email_purpose_key;
+ALTER TABLE IF EXISTS ONLY auth.configs DROP CONSTRAINT IF EXISTS _auth_configs_pkey;
+ALTER TABLE IF EXISTS ONLY auth.user_providers DROP CONSTRAINT IF EXISTS _account_provider_provider_account_id_key;
+ALTER TABLE IF EXISTS ONLY auth.user_providers DROP CONSTRAINT IF EXISTS _account_pkey;
+ALTER TABLE IF EXISTS ONLY ai.usage DROP CONSTRAINT IF EXISTS _ai_usage_pkey;
+ALTER TABLE IF EXISTS ONLY ai.configs DROP CONSTRAINT IF EXISTS _ai_configs_pkey;
+ALTER TABLE IF EXISTS ONLY ai.configs DROP CONSTRAINT IF EXISTS _ai_configs_model_id_key;
+ALTER TABLE IF EXISTS system.migrations ALTER COLUMN id DROP DEFAULT;
+DROP TABLE IF EXISTS system.secrets;
+DROP SEQUENCE IF EXISTS system.migrations_id_seq;
+DROP TABLE IF EXISTS system.migrations;
+DROP TABLE IF EXISTS system.mcp_usage;
+DROP TABLE IF EXISTS system.deployments;
+DROP TABLE IF EXISTS system.audit_logs;
+DROP TABLE IF EXISTS storage.objects;
+DROP TABLE IF EXISTS storage.buckets;
+DROP TABLE IF EXISTS schedules.jobs;
+DROP TABLE IF EXISTS schedules.job_logs;
+DROP TABLE IF EXISTS realtime.messages;
+DROP TABLE IF EXISTS realtime.channels;
+DROP TABLE IF EXISTS public.user_subscriptions;
+DROP TABLE IF EXISTS public.user_profiles;
+DROP TABLE IF EXISTS public.plans;
+DROP TABLE IF EXISTS public.photos;
+DROP TABLE IF EXISTS public.moderation_queues;
+DROP TABLE IF EXISTS public.moderation_actions;
+DROP TABLE IF EXISTS public.jukebox_settings;
+DROP TABLE IF EXISTS public.jukebox_queue;
+DROP TABLE IF EXISTS public.events;
+DROP TABLE IF EXISTS public.admin_config;
+DROP TABLE IF EXISTS functions.deployments;
+DROP TABLE IF EXISTS functions.definitions;
+DROP TABLE IF EXISTS auth.users;
+DROP TABLE IF EXISTS auth.user_providers;
+DROP TABLE IF EXISTS auth.oauth_configs;
+DROP TABLE IF EXISTS auth.email_otps;
+DROP TABLE IF EXISTS auth.configs;
+DROP TABLE IF EXISTS ai.usage;
+DROP TABLE IF EXISTS ai.configs;
+DROP FUNCTION IF EXISTS system.update_updated_at();
+DROP FUNCTION IF EXISTS system.reload_postgrest_schema();
+DROP FUNCTION IF EXISTS system.create_policies_after_rls();
+DROP FUNCTION IF EXISTS system.create_default_policies();
+DROP FUNCTION IF EXISTS schedules.upsert_job(p_job_id uuid, p_name text, p_cron_expression text, p_http_method text, p_function_url text, p_headers_template jsonb, p_resolved_headers jsonb, p_body jsonb);
+DROP FUNCTION IF EXISTS schedules.log_job_execution(p_job_id uuid, p_job_name text, p_success boolean, p_response_status integer, p_duration_ms bigint, p_message text);
+DROP FUNCTION IF EXISTS schedules.execute_job(p_job_id uuid);
+DROP FUNCTION IF EXISTS schedules.encrypt_headers(p_headers jsonb);
+DROP FUNCTION IF EXISTS schedules.enable_job(p_job_id uuid);
+DROP FUNCTION IF EXISTS schedules.disable_job(p_job_id uuid);
+DROP FUNCTION IF EXISTS schedules.delete_job(p_job_id uuid);
+DROP FUNCTION IF EXISTS schedules.decrypt_headers(p_encrypted_headers text);
+DROP FUNCTION IF EXISTS schedules.build_http_headers(headers_jsonb jsonb);
+DROP FUNCTION IF EXISTS realtime.publish(p_channel_name text, p_event_name text, p_payload jsonb);
+DROP FUNCTION IF EXISTS realtime.notify_on_message_insert();
+DROP FUNCTION IF EXISTS realtime.channel_name();
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.check_is_admin();
+DROP FUNCTION IF EXISTS auth.uid();
+DROP FUNCTION IF EXISTS auth.role();
+DROP FUNCTION IF EXISTS auth.email();
+DROP EXTENSION IF EXISTS "uuid-ossp";
+DROP EXTENSION IF EXISTS pgcrypto;
+DROP EXTENSION IF EXISTS http;
+DROP SCHEMA IF EXISTS system;
+DROP SCHEMA IF EXISTS storage;
+DROP SCHEMA IF EXISTS schedules;
+DROP SCHEMA IF EXISTS realtime;
+DROP SCHEMA IF EXISTS functions;
+DROP EXTENSION IF EXISTS pg_cron;
+DROP SCHEMA IF EXISTS auth;
+DROP SCHEMA IF EXISTS ai;
+--
+-- Name: ai; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA ai;
+
+
+ALTER SCHEMA ai OWNER TO postgres;
+
+--
+-- Name: auth; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA auth;
+
+
+ALTER SCHEMA auth OWNER TO postgres;
+
+--
+-- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
+
+
+--
+-- Name: functions; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA functions;
+
+
+ALTER SCHEMA functions OWNER TO postgres;
+
+--
+-- Name: realtime; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA realtime;
+
+
+ALTER SCHEMA realtime OWNER TO postgres;
+
+--
+-- Name: schedules; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA schedules;
+
+
+ALTER SCHEMA schedules OWNER TO postgres;
+
+--
+-- Name: storage; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA storage;
+
+
+ALTER SCHEMA storage OWNER TO postgres;
+
+--
+-- Name: system; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA system;
+
+
+ALTER SCHEMA system OWNER TO postgres;
+
+--
+-- Name: http; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION http; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION http IS 'HTTP client for PostgreSQL, allows web page retrieval inside the database.';
+
+
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+
+--
+-- Name: email(); Type: FUNCTION; Schema: auth; Owner: postgres
+--
+
+CREATE FUNCTION auth.email() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+  coalesce(
+    current_setting('request.jwt.claim.email', true),
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'email')
+  )::text
+$$;
+
+
+ALTER FUNCTION auth.email() OWNER TO postgres;
+
+--
+-- Name: role(); Type: FUNCTION; Schema: auth; Owner: postgres
+--
+
+CREATE FUNCTION auth.role() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+  coalesce(
+    current_setting('request.jwt.claim.role', true),
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role')
+  )::text
+$$;
+
+
+ALTER FUNCTION auth.role() OWNER TO postgres;
+
+--
+-- Name: uid(); Type: FUNCTION; Schema: auth; Owner: postgres
+--
+
+CREATE FUNCTION auth.uid() RETURNS uuid
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+  nullif(
+    coalesce(
+      current_setting('request.jwt.claim.sub', true),
+      (current_setting('request.jwt.claims', true)::jsonb ->> 'sub')
+    ),
+    ''
+  )::uuid
+$$;
+
+
+ALTER FUNCTION auth.uid() OWNER TO postgres;
+
+--
+-- Name: check_is_admin(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.check_is_admin() RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  is_admin BOOLEAN;
+BEGIN
+  SELECT role = 'admin' INTO is_admin FROM public.user_profiles WHERE id = auth.uid();
+  RETURN COALESCE(is_admin, false);
+END;
+$$;
+
+
+ALTER FUNCTION public.check_is_admin() OWNER TO postgres;
+
+--
+-- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.handle_new_user() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+  INSERT INTO public.user_profiles (id, email, role, plan_id)
+  VALUES (
+    new.id, 
+    new.email, 
+    CASE WHEN new.email = 'jquintedori@gmail.com' THEN 'admin' ELSE 'user' END,
+    'basic'
+  );
+  RETURN new;
+END;
+$$;
+
+
+ALTER FUNCTION public.handle_new_user() OWNER TO postgres;
+
+--
+-- Name: channel_name(); Type: FUNCTION; Schema: realtime; Owner: postgres
+--
+
+CREATE FUNCTION realtime.channel_name() RETURNS text
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT current_setting('realtime.channel_name', true);
+$$;
+
+
+ALTER FUNCTION realtime.channel_name() OWNER TO postgres;
+
+--
+-- Name: notify_on_message_insert(); Type: FUNCTION; Schema: realtime; Owner: postgres
+--
+
+CREATE FUNCTION realtime.notify_on_message_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  -- Send only message_id to bypass pg_notify 8KB payload limit
+  -- Backend will fetch full message from DB
+  PERFORM pg_notify('realtime_message', NEW.id::text);
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION realtime.notify_on_message_insert() OWNER TO postgres;
+
+--
+-- Name: publish(text, text, jsonb); Type: FUNCTION; Schema: realtime; Owner: postgres
+--
+
+CREATE FUNCTION realtime.publish(p_channel_name text, p_event_name text, p_payload jsonb) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  v_channel_id UUID;
+  v_message_id UUID;
+BEGIN
+  -- Find matching channel: exact match first, then wildcard pattern match
+  -- For wildcard patterns like "order:%", check if p_channel_name LIKE pattern
+  SELECT id INTO v_channel_id
+  FROM realtime.channels
+  WHERE enabled = TRUE
+    AND (pattern = p_channel_name OR p_channel_name LIKE pattern)
+  ORDER BY pattern = p_channel_name DESC
+  LIMIT 1;
+
+  -- If no channel found, raise a warning and return NULL
+  IF v_channel_id IS NULL THEN
+    RAISE WARNING 'Realtime: No matching channel found for "%"', p_channel_name;
+    RETURN NULL;
+  END IF;
+
+  -- Insert message record (system-triggered, so sender_type = 'system')
+  INSERT INTO realtime.messages (
+    event_name,
+    channel_id,
+    channel_name,
+    payload,
+    sender_type
+  ) VALUES (
+    p_event_name,
+    v_channel_id,
+    p_channel_name,
+    p_payload,
+    'system'
+  )
+  RETURNING id INTO v_message_id;
+
+  RETURN v_message_id;
+END;
+$$;
+
+
+ALTER FUNCTION realtime.publish(p_channel_name text, p_event_name text, p_payload jsonb) OWNER TO postgres;
+
+--
+-- Name: build_http_headers(jsonb); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.build_http_headers(headers_jsonb jsonb) RETURNS public.http_header[]
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+  v_headers http_header[] := ARRAY[]::http_header[];
+  v_key TEXT;
+BEGIN
+  IF headers_jsonb IS NULL THEN
+    RETURN v_headers;
+  END IF;
+
+  FOR v_key IN SELECT jsonb_object_keys(headers_jsonb)
+  LOOP
+    v_headers := array_append(
+      v_headers,
+      http_header(v_key, headers_jsonb ->> v_key)
+    );
+  END LOOP;
+
+  RETURN v_headers;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.build_http_headers(headers_jsonb jsonb) OWNER TO postgres;
+
+--
+-- Name: decrypt_headers(text); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.decrypt_headers(p_encrypted_headers text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  v_key TEXT;
+  v_decrypted TEXT;
+BEGIN
+  IF p_encrypted_headers IS NULL OR p_encrypted_headers = '' THEN
+    RETURN '{}'::JSONB;
+  END IF;
+
+  v_key := current_setting('app.encryption_key', true);
+  IF v_key IS NULL OR v_key = '' THEN
+    RAISE EXCEPTION 'Encryption key app.encryption_key is not set';
+  END IF;
+
+  -- Try to decode and decrypt
+  BEGIN
+    v_decrypted := pgp_sym_decrypt(decode(p_encrypted_headers, 'base64'), v_key);
+    RETURN v_decrypted::JSONB;
+  EXCEPTION WHEN others THEN
+    RAISE WARNING 'Decryption failed for value: %, error: %', left(p_encrypted_headers, 50), SQLERRM;
+    RAISE;  -- Re-raise so execute_job logs the actual failure reason
+  END;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.decrypt_headers(p_encrypted_headers text) OWNER TO postgres;
+
+--
+-- Name: delete_job(uuid); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.delete_job(p_job_id uuid) RETURNS TABLE(success boolean, message text)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_cron_job_id BIGINT;
+BEGIN
+  SELECT cron_job_id INTO v_cron_job_id
+  FROM schedules.jobs WHERE id = p_job_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Job not found';
+    RETURN;
+  END IF;
+
+  IF v_cron_job_id IS NOT NULL THEN
+    PERFORM cron.unschedule(v_cron_job_id);
+  END IF;
+
+  DELETE FROM schedules.jobs WHERE id = p_job_id;
+
+  RETURN QUERY SELECT TRUE, 'Cron job deleted successfully';
+EXCEPTION WHEN OTHERS THEN
+  RETURN QUERY SELECT FALSE, SQLERRM;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.delete_job(p_job_id uuid) OWNER TO postgres;
+
+--
+-- Name: disable_job(uuid); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.disable_job(p_job_id uuid) RETURNS TABLE(success boolean, message text)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_cron_job_id BIGINT;
+BEGIN
+  SELECT cron_job_id INTO v_cron_job_id
+  FROM schedules.jobs WHERE id = p_job_id;
+
+  IF v_cron_job_id IS NULL THEN
+    RETURN QUERY SELECT FALSE, 'No cron job found for this job';
+    RETURN;
+  END IF;
+
+  PERFORM cron.unschedule(v_cron_job_id);
+
+  UPDATE schedules.jobs
+  SET cron_job_id = NULL, is_active = FALSE, updated_at = NOW()
+  WHERE id = p_job_id;
+
+  RETURN QUERY SELECT TRUE, 'Cron job disabled successfully';
+EXCEPTION WHEN OTHERS THEN
+  RETURN QUERY SELECT FALSE, SQLERRM;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.disable_job(p_job_id uuid) OWNER TO postgres;
+
+--
+-- Name: enable_job(uuid); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.enable_job(p_job_id uuid) RETURNS TABLE(success boolean, message text)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_job RECORD;
+  v_new_cron_id BIGINT;
+  v_function_call TEXT;
+BEGIN
+  SELECT id, cron_schedule, function_url
+  INTO v_job
+  FROM schedules.jobs
+  WHERE id = p_job_id;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT FALSE, 'Job not found';
+    RETURN;
+  END IF;
+
+  v_function_call := format('SELECT schedules.execute_job(%L::UUID)', p_job_id);
+  SELECT cron.schedule(v_job.cron_schedule, v_function_call) INTO v_new_cron_id;
+
+  UPDATE schedules.jobs
+  SET cron_job_id = v_new_cron_id,
+      is_active = TRUE,
+      updated_at = NOW()
+  WHERE id = p_job_id;
+
+  RETURN QUERY SELECT TRUE, 'Cron job enabled successfully';
+EXCEPTION WHEN OTHERS THEN
+  RETURN QUERY SELECT FALSE, SQLERRM;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.enable_job(p_job_id uuid) OWNER TO postgres;
+
+--
+-- Name: encrypt_headers(jsonb); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.encrypt_headers(p_headers jsonb) RETURNS text
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+  v_key TEXT;
+  v_encrypted TEXT;
+BEGIN
+  IF p_headers IS NULL OR p_headers = '{}'::JSONB THEN
+    RETURN NULL;
+  END IF;
+
+  v_key := current_setting('app.encryption_key', true);
+  IF v_key IS NULL OR v_key = '' THEN
+    RAISE EXCEPTION 'Encryption key app.encryption_key is not set';
+  END IF;
+
+  -- pgp_sym_encrypt returns bytea; encode to base64 for TEXT storage
+  v_encrypted := encode(pgp_sym_encrypt(p_headers::TEXT, v_key), 'base64');
+
+  RETURN v_encrypted;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.encrypt_headers(p_headers jsonb) OWNER TO postgres;
+
+--
+-- Name: execute_job(uuid); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.execute_job(p_job_id uuid) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_job RECORD;
+  v_http_request http_request;
+  v_http_response http_response;
+  v_success BOOLEAN;
+  v_status INT;
+  v_body TEXT;
+  v_decrypted_headers JSONB;
+  v_final_body JSONB;
+  v_start_time TIMESTAMP := clock_timestamp();
+  v_end_time TIMESTAMP;
+  v_duration_ms BIGINT;
+  v_error_message TEXT;
+BEGIN
+  -- Fetch the job
+  SELECT
+    j.id,
+    j.name,
+    j.function_url,
+    j.http_method,
+    j.body,
+    j.encrypted_headers
+  INTO v_job
+  FROM schedules.jobs AS j
+  WHERE j.id = p_job_id;
+
+  IF NOT FOUND THEN
+    PERFORM schedules.log_job_execution(p_job_id, 'unknown', FALSE, 404, 0, 'Job not found');
+    RETURN;
+  END IF;
+
+  BEGIN
+    -- Decrypt headers
+    v_decrypted_headers := schedules.decrypt_headers(v_job.encrypted_headers);
+
+    -- Build the final request body
+    v_final_body := COALESCE(v_job.body, '{}'::JSONB);
+
+    -- Construct HTTP request
+    v_http_request := (
+      v_job.http_method::http_method,
+      v_job.function_url,
+      schedules.build_http_headers(v_decrypted_headers),
+      'application/json',
+      v_final_body::TEXT
+    );
+    v_start_time := clock_timestamp();
+    -- Execute HTTP call
+    v_http_response := http(v_http_request);
+    v_end_time := clock_timestamp();
+    v_duration_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
+    v_status := v_http_response.status;
+    v_body := v_http_response.content;
+    v_success := v_status BETWEEN 200 AND 299;
+
+    -- Log execution
+    v_error_message := CASE WHEN v_success THEN 'Success' ELSE 'HTTP ' || v_status END;
+    PERFORM schedules.log_job_execution(v_job.id, v_job.name, v_success, v_status, v_duration_ms, v_error_message);
+
+  EXCEPTION WHEN OTHERS THEN
+    v_end_time := clock_timestamp();
+    v_duration_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
+    PERFORM schedules.log_job_execution(v_job.id, v_job.name, FALSE, 500, v_duration_ms, SQLERRM);
+  END;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.execute_job(p_job_id uuid) OWNER TO postgres;
+
+--
+-- Name: log_job_execution(uuid, text, boolean, integer, bigint, text); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.log_job_execution(p_job_id uuid, p_job_name text, p_success boolean, p_response_status integer, p_duration_ms bigint, p_message text DEFAULT NULL::text) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO schedules.job_logs (
+    job_id,
+    executed_at,
+    status_code,
+    success,
+    duration_ms,
+    message
+  ) VALUES (
+    p_job_id,
+    NOW(),
+    p_response_status,
+    p_success,
+    p_duration_ms,
+    p_message
+  );
+
+  -- Update last_executed_at in jobs table
+  UPDATE schedules.jobs
+  SET last_executed_at = NOW(),
+      updated_at = NOW()
+  WHERE id = p_job_id;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.log_job_execution(p_job_id uuid, p_job_name text, p_success boolean, p_response_status integer, p_duration_ms bigint, p_message text) OWNER TO postgres;
+
+--
+-- Name: upsert_job(uuid, text, text, text, text, jsonb, jsonb, jsonb); Type: FUNCTION; Schema: schedules; Owner: postgres
+--
+
+CREATE FUNCTION schedules.upsert_job(p_job_id uuid, p_name text, p_cron_expression text, p_http_method text, p_function_url text, p_headers_template jsonb, p_resolved_headers jsonb, p_body jsonb) RETURNS TABLE(cron_job_id bigint, success boolean, message text)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_existing_cron_id BIGINT;
+  v_new_cron_id BIGINT;
+  v_function_call TEXT;
+  v_encrypted_headers TEXT;
+BEGIN
+  -- Encrypt resolved headers (with actual secret values) before storing
+  v_encrypted_headers := schedules.encrypt_headers(p_resolved_headers);
+
+  -- Unschedule any existing job for this schedule to prevent duplicates
+  SELECT j.cron_job_id INTO v_existing_cron_id
+  FROM schedules.jobs AS j
+  WHERE j.id = p_job_id;
+
+  IF v_existing_cron_id IS NOT NULL THEN
+    PERFORM cron.unschedule(v_existing_cron_id);
+  END IF;
+
+  -- Schedule the new cron job
+  v_function_call := format('SELECT schedules.execute_job(%L::UUID)', p_job_id);
+  SELECT cron.schedule(p_cron_expression, v_function_call) INTO v_new_cron_id;
+
+  -- Insert or update the job record
+  -- headers = original template (safe to display)
+  -- encrypted_headers = resolved values (used at runtime)
+  INSERT INTO schedules.jobs (
+    id, name, cron_schedule, function_url, http_method, encrypted_headers, headers, body, cron_job_id, is_active, created_at, updated_at
+  ) VALUES (
+    p_job_id,
+    p_name,
+    p_cron_expression,
+    p_function_url,
+    p_http_method,
+    v_encrypted_headers,
+    p_headers_template,
+    p_body,
+    v_new_cron_id,
+    TRUE,
+    NOW(),
+    NOW()
+  ) ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    cron_schedule = EXCLUDED.cron_schedule,
+    function_url = EXCLUDED.function_url,
+    http_method = EXCLUDED.http_method,
+    encrypted_headers = EXCLUDED.encrypted_headers,
+    headers = EXCLUDED.headers,
+    body = EXCLUDED.body,
+    cron_job_id = EXCLUDED.cron_job_id,
+    is_active = TRUE,
+    updated_at = NOW();
+
+  RETURN QUERY SELECT v_new_cron_id, TRUE, 'Cron job scheduled successfully';
+EXCEPTION WHEN OTHERS THEN
+  RETURN QUERY SELECT NULL::BIGINT, FALSE, SQLERRM;
+END;
+$$;
+
+
+ALTER FUNCTION schedules.upsert_job(p_job_id uuid, p_name text, p_cron_expression text, p_http_method text, p_function_url text, p_headers_template jsonb, p_resolved_headers jsonb, p_body jsonb) OWNER TO postgres;
+
+--
+-- Name: create_default_policies(); Type: FUNCTION; Schema: system; Owner: postgres
+--
+
+CREATE FUNCTION system.create_default_policies() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  obj record;
+  table_schema text;
+  table_name text;
+  has_rls boolean;
+BEGIN
+  FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag = 'CREATE TABLE'
+  LOOP
+    SELECT INTO table_schema, table_name
+      split_part(obj.object_identity, '.', 1),
+      trim(both '"' from split_part(obj.object_identity, '.', 2));
+    SELECT INTO has_rls
+      rowsecurity
+    FROM pg_tables
+    WHERE schemaname = table_schema
+      AND tablename = table_name;
+    IF has_rls THEN
+      EXECUTE format('CREATE POLICY "project_admin_policy" ON %s FOR ALL TO project_admin USING (true) WITH CHECK (true)', obj.object_identity);
+    END IF;
+  END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION system.create_default_policies() OWNER TO postgres;
+
+--
+-- Name: create_policies_after_rls(); Type: FUNCTION; Schema: system; Owner: postgres
+--
+
+CREATE FUNCTION system.create_policies_after_rls() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  obj record;
+  table_schema text;
+  table_name text;
+BEGIN
+  FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag = 'ALTER TABLE'
+  LOOP
+    SELECT INTO table_schema, table_name
+      split_part(obj.object_identity, '.', 1),
+      trim(both '"' from split_part(obj.object_identity, '.', 2));
+    IF EXISTS (
+      SELECT 1 FROM pg_tables
+      WHERE schemaname = table_schema
+        AND tablename = table_name
+        AND rowsecurity = true
+    ) AND NOT EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname = table_schema
+        AND tablename = table_name
+    ) THEN
+      EXECUTE format('CREATE POLICY "project_admin_policy" ON %s FOR ALL TO project_admin USING (true) WITH CHECK (true)', obj.object_identity);
+    END IF;
+  END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION system.create_policies_after_rls() OWNER TO postgres;
+
+--
+-- Name: reload_postgrest_schema(); Type: FUNCTION; Schema: system; Owner: postgres
+--
+
+CREATE FUNCTION system.reload_postgrest_schema() RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NOTIFY pgrst, 'reload schema';
+    RAISE NOTICE 'PostgREST schema reload notification sent';
+END
+$$;
+
+
+ALTER FUNCTION system.reload_postgrest_schema() OWNER TO postgres;
+
+--
+-- Name: update_updated_at(); Type: FUNCTION; Schema: system; Owner: postgres
+--
+
+CREATE FUNCTION system.update_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION system.update_updated_at() OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: configs; Type: TABLE; Schema: ai; Owner: postgres
+--
+
+CREATE TABLE ai.configs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider character varying(255) NOT NULL,
+    model_id character varying(255) NOT NULL,
+    system_prompt text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    input_modality text[] DEFAULT '{text}'::text[] NOT NULL,
+    output_modality text[] DEFAULT '{text}'::text[] NOT NULL,
+    CONSTRAINT check_input_modality_not_empty CHECK ((array_length(input_modality, 1) > 0)),
+    CONSTRAINT check_input_modality_valid CHECK ((input_modality <@ '{text,image,audio,video,file}'::text[])),
+    CONSTRAINT check_output_modality_not_empty CHECK ((array_length(output_modality, 1) > 0)),
+    CONSTRAINT check_output_modality_valid CHECK ((output_modality <@ '{text,image,audio,video,file}'::text[]))
+);
+
+
+ALTER TABLE ai.configs OWNER TO postgres;
+
+--
+-- Name: usage; Type: TABLE; Schema: ai; Owner: postgres
+--
+
+CREATE TABLE ai.usage (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    config_id uuid,
+    input_tokens integer,
+    output_tokens integer,
+    image_count integer,
+    image_resolution text,
+    created_at timestamp with time zone DEFAULT now(),
+    model_id character varying(255)
+);
+
+
+ALTER TABLE ai.usage OWNER TO postgres;
+
+--
+-- Name: configs; Type: TABLE; Schema: auth; Owner: postgres
+--
+
+CREATE TABLE auth.configs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    require_email_verification boolean DEFAULT false NOT NULL,
+    password_min_length integer DEFAULT 6 NOT NULL,
+    require_number boolean DEFAULT false NOT NULL,
+    require_lowercase boolean DEFAULT false NOT NULL,
+    require_uppercase boolean DEFAULT false NOT NULL,
+    require_special_char boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    verify_email_method text DEFAULT 'code'::text NOT NULL,
+    reset_password_method text DEFAULT 'code'::text NOT NULL,
+    sign_in_redirect_to text,
+    CONSTRAINT _auth_configs_password_min_length_check CHECK (((password_min_length >= 4) AND (password_min_length <= 128))),
+    CONSTRAINT _auth_configs_reset_password_method_check CHECK ((reset_password_method = ANY (ARRAY['code'::text, 'link'::text]))),
+    CONSTRAINT _auth_configs_verify_email_method_check CHECK ((verify_email_method = ANY (ARRAY['code'::text, 'link'::text])))
+);
+
+
+ALTER TABLE auth.configs OWNER TO postgres;
+
+--
+-- Name: email_otps; Type: TABLE; Schema: auth; Owner: postgres
+--
+
+CREATE TABLE auth.email_otps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email text NOT NULL,
+    purpose text NOT NULL,
+    otp_hash text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    consumed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE auth.email_otps OWNER TO postgres;
+
+--
+-- Name: oauth_configs; Type: TABLE; Schema: auth; Owner: postgres
+--
+
+CREATE TABLE auth.oauth_configs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider text NOT NULL,
+    client_id text,
+    secret_id uuid,
+    scopes text[],
+    redirect_uri text,
+    use_shared_key boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE auth.oauth_configs OWNER TO postgres;
+
+--
+-- Name: user_providers; Type: TABLE; Schema: auth; Owner: postgres
+--
+
+CREATE TABLE auth.user_providers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    provider text NOT NULL,
+    provider_account_id text NOT NULL,
+    access_token text,
+    refresh_token text,
+    provider_data jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE auth.user_providers OWNER TO postgres;
+
+--
+-- Name: users; Type: TABLE; Schema: auth; Owner: postgres
+--
+
+CREATE TABLE auth.users (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email text NOT NULL,
+    password text,
+    email_verified boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    profile jsonb DEFAULT '{}'::jsonb,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    is_project_admin boolean DEFAULT false NOT NULL,
+    is_anonymous boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE auth.users OWNER TO postgres;
+
+--
+-- Name: definitions; Type: TABLE; Schema: functions; Owner: postgres
+--
+
+CREATE TABLE functions.definitions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug character varying(255) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    code text NOT NULL,
+    status character varying(50) DEFAULT 'draft'::character varying,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    deployed_at timestamp with time zone
+);
+
+
+ALTER TABLE functions.definitions OWNER TO postgres;
+
+--
+-- Name: deployments; Type: TABLE; Schema: functions; Owner: postgres
+--
+
+CREATE TABLE functions.deployments (
+    id text NOT NULL,
+    project_id text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    url text,
+    function_count integer,
+    functions jsonb,
+    error_message text,
+    build_logs jsonb,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE functions.deployments OWNER TO postgres;
+
+--
+-- Name: admin_config; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.admin_config (
+    key text NOT NULL,
+    value text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.admin_config OWNER TO postgres;
+
+--
+-- Name: events; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code character varying(6) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    creator_id text DEFAULT 'anonymous'::text NOT NULL,
+    moderation_enabled boolean DEFAULT false NOT NULL,
+    status character varying(10) DEFAULT 'active'::character varying NOT NULL
+);
+
+
+ALTER TABLE public.events OWNER TO postgres;
+
+--
+-- Name: jukebox_queue; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.jukebox_queue (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_id uuid NOT NULL,
+    track_id text NOT NULL,
+    spotify_track_id text DEFAULT ''::text NOT NULL,
+    title text NOT NULL,
+    artist text NOT NULL,
+    album_art text,
+    genre text,
+    votes integer DEFAULT 0 NOT NULL,
+    voters jsonb DEFAULT '[]'::jsonb,
+    status character varying(10) DEFAULT 'pending'::character varying NOT NULL,
+    provider character varying(10) DEFAULT 'youtube'::character varying NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    preview_url text
+);
+
+
+ALTER TABLE public.jukebox_queue OWNER TO postgres;
+
+--
+-- Name: jukebox_settings; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.jukebox_settings (
+    event_id uuid NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    vibe_filters text[] DEFAULT '{}'::text[],
+    spotify_playlist_id text,
+    provider character varying(10) DEFAULT 'youtube'::character varying NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.jukebox_settings OWNER TO postgres;
+
+--
+-- Name: moderation_actions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.moderation_actions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    photo_id uuid NOT NULL,
+    moderator_id text NOT NULL,
+    action text NOT NULL,
+    reason text,
+    actioned_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.moderation_actions OWNER TO postgres;
+
+--
+-- Name: moderation_queues; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.moderation_queues (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    photo_id uuid NOT NULL,
+    queued_at timestamp with time zone DEFAULT now() NOT NULL,
+    gemini_suggestion text,
+    confidence_score numeric,
+    processed boolean DEFAULT false NOT NULL,
+    error_message text
+);
+
+
+ALTER TABLE public.moderation_queues OWNER TO postgres;
+
+--
+-- Name: photos; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.photos (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_id uuid NOT NULL,
+    storage_path text NOT NULL,
+    storage_url text,
+    caption text,
+    status character varying(10) DEFAULT 'pending'::character varying NOT NULL,
+    uploaded_by text DEFAULT 'anonymous'::text NOT NULL,
+    uploaded_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.photos OWNER TO postgres;
+
+--
+-- Name: plans; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.plans (
+    id text NOT NULL,
+    name text NOT NULL,
+    features jsonb DEFAULT '{}'::jsonb NOT NULL,
+    price numeric DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.plans OWNER TO postgres;
+
+--
+-- Name: user_profiles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_profiles (
+    id uuid NOT NULL,
+    email text NOT NULL,
+    role text DEFAULT 'user'::text NOT NULL,
+    plan_id text DEFAULT 'basic'::text NOT NULL,
+    status text DEFAULT 'active'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    full_name text,
+    instagram_username text,
+    custom_logo_url text
+);
+
+
+ALTER TABLE public.user_profiles OWNER TO postgres;
+
+--
+-- Name: user_subscriptions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_subscriptions (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    user_id uuid NOT NULL,
+    plan_id text NOT NULL,
+    status text DEFAULT 'trialing'::text NOT NULL,
+    external_subscription_id text,
+    current_period_end timestamp with time zone,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT user_subscriptions_status_check CHECK ((status = ANY (ARRAY['active'::text, 'trialing'::text, 'past_due'::text, 'canceled'::text])))
+);
+
+
+ALTER TABLE public.user_subscriptions OWNER TO postgres;
+
+--
+-- Name: channels; Type: TABLE; Schema: realtime; Owner: postgres
+--
+
+CREATE TABLE realtime.channels (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    pattern text NOT NULL,
+    description text,
+    webhook_urls text[],
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE realtime.channels OWNER TO postgres;
+
+--
+-- Name: messages; Type: TABLE; Schema: realtime; Owner: postgres
+--
+
+CREATE TABLE realtime.messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_name text NOT NULL,
+    channel_id uuid,
+    channel_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    sender_type text DEFAULT 'system'::text NOT NULL,
+    sender_id uuid,
+    ws_audience_count integer DEFAULT 0 NOT NULL,
+    wh_audience_count integer DEFAULT 0 NOT NULL,
+    wh_delivered_count integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT messages_sender_type_check CHECK ((sender_type = ANY (ARRAY['system'::text, 'user'::text])))
+);
+
+
+ALTER TABLE realtime.messages OWNER TO postgres;
+
+--
+-- Name: job_logs; Type: TABLE; Schema: schedules; Owner: postgres
+--
+
+CREATE TABLE schedules.job_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    job_id uuid,
+    executed_at timestamp with time zone DEFAULT now(),
+    status_code integer,
+    success boolean,
+    duration_ms bigint,
+    message text
+);
+
+
+ALTER TABLE schedules.job_logs OWNER TO postgres;
+
+--
+-- Name: jobs; Type: TABLE; Schema: schedules; Owner: postgres
+--
+
+CREATE TABLE schedules.jobs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    cron_schedule text NOT NULL,
+    function_url text NOT NULL,
+    http_method text DEFAULT 'POST'::text NOT NULL,
+    encrypted_headers text,
+    headers jsonb,
+    body jsonb,
+    is_active boolean DEFAULT true NOT NULL,
+    cron_job_id bigint,
+    last_executed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE schedules.jobs OWNER TO postgres;
+
+--
+-- Name: buckets; Type: TABLE; Schema: storage; Owner: postgres
+--
+
+CREATE TABLE storage.buckets (
+    name text NOT NULL,
+    public boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE storage.buckets OWNER TO postgres;
+
+--
+-- Name: objects; Type: TABLE; Schema: storage; Owner: postgres
+--
+
+CREATE TABLE storage.objects (
+    bucket text NOT NULL,
+    key text NOT NULL,
+    size integer NOT NULL,
+    mime_type text,
+    uploaded_at timestamp with time zone DEFAULT now(),
+    uploaded_by uuid
+);
+
+
+ALTER TABLE storage.objects OWNER TO postgres;
+
+--
+-- Name: audit_logs; Type: TABLE; Schema: system; Owner: postgres
+--
+
+CREATE TABLE system.audit_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    actor text NOT NULL,
+    action text NOT NULL,
+    module text NOT NULL,
+    details jsonb,
+    ip_address inet,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE system.audit_logs OWNER TO postgres;
+
+--
+-- Name: deployments; Type: TABLE; Schema: system; Owner: postgres
+--
+
+CREATE TABLE system.deployments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider text DEFAULT 'vercel'::text NOT NULL,
+    provider_deployment_id text,
+    status text DEFAULT 'WAITING'::text NOT NULL,
+    url text,
+    metadata jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE system.deployments OWNER TO postgres;
+
+--
+-- Name: mcp_usage; Type: TABLE; Schema: system; Owner: postgres
+--
+
+CREATE TABLE system.mcp_usage (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tool_name character varying(255) NOT NULL,
+    success boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE system.mcp_usage OWNER TO postgres;
+
+--
+-- Name: migrations; Type: TABLE; Schema: system; Owner: postgres
+--
+
+CREATE TABLE system.migrations (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    run_on timestamp without time zone NOT NULL
+);
+
+
+ALTER TABLE system.migrations OWNER TO postgres;
+
+--
+-- Name: migrations_id_seq; Type: SEQUENCE; Schema: system; Owner: postgres
+--
+
+CREATE SEQUENCE system.migrations_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE system.migrations_id_seq OWNER TO postgres;
+
+--
+-- Name: migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: system; Owner: postgres
+--
+
+ALTER SEQUENCE system.migrations_id_seq OWNED BY system.migrations.id;
+
+
+--
+-- Name: secrets; Type: TABLE; Schema: system; Owner: postgres
+--
+
+CREATE TABLE system.secrets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    key text NOT NULL,
+    value_ciphertext text NOT NULL,
+    is_active boolean DEFAULT true,
+    last_used_at timestamp with time zone,
+    expires_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    is_reserved boolean DEFAULT false
+);
+
+
+ALTER TABLE system.secrets OWNER TO postgres;
+
+--
+-- Name: migrations id; Type: DEFAULT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.migrations ALTER COLUMN id SET DEFAULT nextval('system.migrations_id_seq'::regclass);
+
+
+--
+-- Data for Name: configs; Type: TABLE DATA; Schema: ai; Owner: postgres
+--
+
+COPY ai.configs (id, provider, model_id, system_prompt, created_at, updated_at, input_modality, output_modality) FROM stdin;
+166e7797-93f1-4919-8959-80afd831695e	openrouter	google/gemini-3-pro-image-preview	\N	2026-02-22 12:08:19.993868+00	2026-02-22 12:08:19.993868+00	{text,image}	{text,image}
+bed54fdd-5c33-4386-b8cf-6a31a15b13a1	openrouter	openai/gpt-4o-mini	\N	2026-02-22 12:08:20.001868+00	2026-02-22 12:08:20.001868+00	{text,image}	{text}
+6715cf95-8f24-4ce3-890b-a29bd409cbd7	openrouter	anthropic/claude-sonnet-4.5	\N	2026-02-22 12:08:20.005499+00	2026-02-22 12:08:20.005499+00	{text,image}	{text}
+84606ff5-990e-4ffe-8fc6-86c8ccb79fa3	openrouter	x-ai/grok-4.1-fast	\N	2026-02-22 12:08:20.009898+00	2026-02-22 12:08:20.009898+00	{text,image}	{text}
+2e2ead33-a701-4cb0-9694-fbce88a16dfc	openrouter	minimax/minimax-m2.1	\N	2026-02-22 12:08:20.013357+00	2026-02-22 12:08:20.013357+00	{text,image}	{text}
+c24f1aca-e310-4825-bfd8-839e4bd8a3f7	openrouter	deepseek/deepseek-v3.2	\N	2026-02-22 12:08:20.016923+00	2026-02-22 12:08:20.016923+00	{text,image}	{text}
+\.
+
+
+--
+-- Data for Name: usage; Type: TABLE DATA; Schema: ai; Owner: postgres
+--
+
+COPY ai.usage (id, config_id, input_tokens, output_tokens, image_count, image_resolution, created_at, model_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: configs; Type: TABLE DATA; Schema: auth; Owner: postgres
+--
+
+COPY auth.configs (id, require_email_verification, password_min_length, require_number, require_lowercase, require_uppercase, require_special_char, created_at, updated_at, verify_email_method, reset_password_method, sign_in_redirect_to) FROM stdin;
+3f941dde-a8ea-4883-b99f-957964b154df	t	6	f	f	f	f	2026-02-22 12:08:20.024294+00	2026-02-22 12:08:20.024294+00	code	code	\N
+\.
+
+
+--
+-- Data for Name: email_otps; Type: TABLE DATA; Schema: auth; Owner: postgres
+--
+
+COPY auth.email_otps (id, email, purpose, otp_hash, expires_at, consumed_at, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: oauth_configs; Type: TABLE DATA; Schema: auth; Owner: postgres
+--
+
+COPY auth.oauth_configs (id, provider, client_id, secret_id, scopes, redirect_uri, use_shared_key, created_at, updated_at) FROM stdin;
+415e926c-9a64-43b0-bec6-fbba7c2572c1	google	\N	\N	{openid,email,profile}	\N	t	2026-02-22 12:08:19.646726+00	2026-02-22 12:08:19.646726+00
+58d1247c-ffbf-4fcd-b6fb-2bb46eaeaf57	github	\N	\N	{user:email}	\N	t	2026-02-22 12:08:19.678708+00	2026-02-22 12:08:19.678708+00
+\.
+
+
+--
+-- Data for Name: user_providers; Type: TABLE DATA; Schema: auth; Owner: postgres
+--
+
+COPY auth.user_providers (id, user_id, provider, provider_account_id, access_token, refresh_token, provider_data, created_at, updated_at) FROM stdin;
+9c0e2627-715f-4822-b15b-eeddf0972afe	c4637df4-8b12-40d4-a3d9-c3532f766dad	google	100766388454775370226	\N	\N	{"name": "JORGE QUINTERO", "email": "elhacker123@gmail.com", "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKc9PlnNe6SqSGtgUWp9E_AqT4IHLnE9WIc31jddruJufoieA=s96-c", "provider": "google", "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKc9PlnNe6SqSGtgUWp9E_AqT4IHLnE9WIc31jddruJufoieA=s96-c", "providerId": "100766388454775370226"}	2026-02-24 18:51:18.205488+00	2026-02-24 19:50:28.707274+00
+6c40d50b-d26b-4729-9c18-e71ee5c8c507	689943f9-5bd6-401c-920e-75bb55d4b28b	google	102608221822167413978	\N	\N	{"name": "Jorge Quintero", "email": "jquintedori@gmail.com", "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKBwRrpBAiPUmkDo6-LjwX29NGn8EG71FHLhvzIaSBg9RvLrnbK=s96-c", "provider": "google", "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKBwRrpBAiPUmkDo6-LjwX29NGn8EG71FHLhvzIaSBg9RvLrnbK=s96-c", "providerId": "102608221822167413978"}	2026-02-24 18:48:16.506098+00	2026-02-28 10:10:00.827342+00
+\.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: auth; Owner: postgres
+--
+
+COPY auth.users (id, email, password, email_verified, created_at, updated_at, profile, metadata, is_project_admin, is_anonymous) FROM stdin;
+00000000-0000-0000-0000-000000000001	admin@example.com	$2b$10$hO/MSHhz22hRqhsIzw/M7ONFNg3QrCyO8DbFJAPnupoZGyfeAeRbu	t	2026-02-22 12:08:19.558675+00	2026-02-22 12:08:19.558675+00	{"name": "Administrator"}	{}	t	f
+12345678-1234-5678-90ab-cdef12345678	anon@example.com	\N	f	2026-02-22 12:08:19.588069+00	2026-02-22 12:08:19.588069+00	{"name": "Anonymous"}	{}	f	t
+689943f9-5bd6-401c-920e-75bb55d4b28b	jquintedori@gmail.com	\N	t	2026-02-24 18:48:16.506098+00	2026-02-24 18:48:16.506098+00	{"name": "Jorge Quintero", "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKBwRrpBAiPUmkDo6-LjwX29NGn8EG71FHLhvzIaSBg9RvLrnbK=s96-c"}	{}	f	f
+c4637df4-8b12-40d4-a3d9-c3532f766dad	elhacker123@gmail.com	\N	t	2026-02-24 18:51:18.205488+00	2026-02-24 18:51:18.205488+00	{"name": "JORGE QUINTERO", "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKc9PlnNe6SqSGtgUWp9E_AqT4IHLnE9WIc31jddruJufoieA=s96-c"}	{}	f	f
+\.
+
+
+--
+-- Data for Name: job; Type: TABLE DATA; Schema: cron; Owner: postgres
+--
+
+COPY cron.job (jobid, schedule, command, nodename, nodeport, database, username, active, jobname) FROM stdin;
+\.
+
+
+--
+-- Data for Name: job_run_details; Type: TABLE DATA; Schema: cron; Owner: postgres
+--
+
+COPY cron.job_run_details (jobid, runid, job_pid, database, username, command, status, return_message, start_time, end_time) FROM stdin;
+\.
+
+
+--
+-- Data for Name: definitions; Type: TABLE DATA; Schema: functions; Owner: postgres
+--
+
+COPY functions.definitions (id, slug, name, description, code, status, created_at, updated_at, deployed_at) FROM stdin;
+6a727273-9c3b-4633-bf42-a262c9c7c3b1	music-search	Music Search	Handles Spotify and YouTube search via server-side API calls. Supports actions: search_spotify, search_youtube, get_spotify_token.	import { createClient } from 'npm:@insforge/sdk';\n\nexport default async function(req) {\n  const corsHeaders = {\n    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',\n    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',\n  };\n\n  if (req.method === 'OPTIONS') {\n    return new Response(null, { status: 204, headers: corsHeaders });\n  }\n\n  try {\n    const body = await req.json().catch(() => ({}));\n    const { action, query, artists } = body;\n\n    // Get Spotify credentials from admin_config table\n    const client = createClient({\n      baseUrl: Deno.env.get('INSFORGE_BASE_URL'),\n      anonKey: Deno.env.get('ANON_KEY'),\n    });\n\n    const { data: config, error: configError } = await client.database\n      .from('admin_config')\n      .select('key, value')\n      .in('key', ['spotify_client_id', 'spotify_client_secret', 'youtube_api_key']);\n\n    if (configError || !config) {\n      throw new Error('Could not load configuration');\n    }\n\n    // --- YouTube Search ---\n    if (action === 'search_youtube') {\n      const apiKey = config.find(c => c.key === 'youtube_api_key')?.value;\n      if (!apiKey) {\n        return new Response(JSON.stringify({ error: 'YouTube API Key not configured' }), {\n          status: 400,\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n        });\n      }\n      if (!query) {\n        return new Response(JSON.stringify({ error: 'Query is required' }), {\n          status: 400,\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n        });\n      }\n\n      const res = await fetch(\n        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=10`\n      );\n      const data = await res.json();\n\n      if (!res.ok) {\n        return new Response(JSON.stringify({ error: data.error?.message || 'YouTube search failed' }), {\n          status: res.status,\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n        });\n      }\n\n      const tracks = data.items.map((item) => ({\n        id: item.id.videoId,\n        title: item.snippet.title,\n        artist: item.snippet.channelTitle,\n        album_art: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url || null,\n        preview_url: null,\n        provider: 'youtube',\n      }));\n\n      return new Response(JSON.stringify({ tracks }), {\n        status: 200,\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n      });\n    }\n\n    // --- Spotify Search ---\n    if (action === 'search_spotify') {\n      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\n      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\n\n      if (!clientId || !clientSecret) {\n        return new Response(JSON.stringify({ error: 'Spotify credentials not configured. Add them in Admin Dashboard.' }), {\n          status: 400,\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n        });\n      }\n      if (!query) {\n        return new Response(JSON.stringify({ error: 'Query is required' }), {\n          status: 400,\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n        });\n      }\n\n      // 1. Get access token using Client Credentials flow\n      const authString = btoa(`${clientId}:${clientSecret}`);\n      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {\n        method: 'POST',\n        headers: {\n          Authorization: `Basic ${authString}`,\n          'Content-Type': 'application/x-www-form-urlencoded',\n        },\n        body: 'grant_type=client_credentials',\n      });\n\n      const tokenData = await tokenRes.json();\n      if (!tokenRes.ok) {\n        return new Response(\n          JSON.stringify({ error: tokenData.error_description || 'Failed to get Spotify token' }),\n          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }\n        );\n      }\n\n      // 2. Search Spotify tracks\n      const searchRes = await fetch(\n        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`,\n        {\n          headers: { Authorization: `Bearer ${tokenData.access_token}` },\n        }\n      );\n\n      const searchData = await searchRes.json();\n      if (!searchRes.ok) {\n        return new Response(\n          JSON.stringify({ error: searchData.error?.message || 'Spotify search failed' }),\n          { status: searchRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }\n        );\n      }\n\n      const tracks = searchData.tracks.items.map((track) => ({\n        id: track.id,\n        title: track.name,\n        artist: track.artists.map(a => a.name).join(', '),\n        album_art: track.album.images?.[0]?.url || null,\n        preview_url: track.preview_url || null,\n        provider: 'spotify',\n      }));\n\n      return new Response(JSON.stringify({ tracks }), {\n        status: 200,\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n      });\n    }\n\n    // --- Get Artist Genres ---\n    if (action === 'get_artist_genres') {\n      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\n      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\n\n      if (!clientId || !clientSecret) {\n        return new Response(JSON.stringify({ genres: {} }), {\n          status: 200, \n          headers: { ...corsHeaders, 'Content-Type': 'application/json' }\n        });\n      }\n      \n      if (!artists || !Array.isArray(artists) || artists.length === 0) {\n        return new Response(JSON.stringify({ genres: {} }), {\n          status: 200,\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n        });\n      }\n\n      // 1. Get access token\n      const authString = btoa(`${clientId}:${clientSecret}`);\n      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {\n        method: 'POST',\n        headers: {\n          Authorization: `Basic ${authString}`,\n          'Content-Type': 'application/x-www-form-urlencoded',\n        },\n        body: 'grant_type=client_credentials',\n      });\n\n      const tokenData = await tokenRes.json();\n      if (!tokenRes.ok) {\n        return new Response(JSON.stringify({ genres: {} }), {\n           status: 200,\n           headers: { ...corsHeaders, 'Content-Type': 'application/json' }\n        });\n      }\n\n      // 2. Search each artist to get their genres\n      const genresByArtist = {};\n      const targetArtists = [...new Set(artists)].slice(0, 5); // Deduplicate and limit\n      \n      for (const artistName of targetArtists) {\n        try {\n          const searchRes = await fetch(\n            `https://api.spotify.com/v1/search?q=${encodeURIComponent('artist:' + artistName)}&type=artist&limit=1`,\n            { headers: { Authorization: `Bearer ${tokenData.access_token}` } }\n          );\n          if (searchRes.ok) {\n             const searchData = await searchRes.json();\n             const foundArtist = searchData.artists?.items?.[0];\n             if (foundArtist && foundArtist.genres?.length > 0) {\n                 genresByArtist[artistName] = foundArtist.genres[0]; \n             } else {\n                 genresByArtist[artistName] = 'unknown';\n             }\n          }\n        } catch (e) {}\n      }\n\n      return new Response(JSON.stringify({ genres: genresByArtist }), {\n        status: 200,\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n      });\n    }\n\n    // --- Default: Get Spotify Token ---\n    const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\n    const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\n\n    if (!clientId || !clientSecret) {\n      return new Response(JSON.stringify({ error: 'Spotify credentials not configured' }), {\n        status: 400,\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n      });\n    }\n\n    const authString = btoa(`${clientId}:${clientSecret}`);\n    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {\n      method: 'POST',\n      headers: {\n        Authorization: `Basic ${authString}`,\n        'Content-Type': 'application/x-www-form-urlencoded',\n      },\n      body: 'grant_type=client_credentials',\n    });\n\n    const tokenResult = await tokenResponse.json();\n    if (!tokenResponse.ok) {\n      throw new Error(tokenResult.error_description || 'Failed to get Spotify token');\n    }\n\n    return new Response(JSON.stringify(tokenResult), {\n      status: 200,\n      headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n    });\n  } catch (e) {\n    return new Response(JSON.stringify({ error: String(e) }), {\n      status: 500,\n      headers: { ...corsHeaders, 'Content-Type': 'application/json' },\n    });\n  }\n}\n	active	2026-02-22 16:40:50.744018+00	2026-02-22 17:01:18.561403+00	2026-02-22 17:01:18.560148+00
+6574dcf5-4c2a-4957-90ea-4f86e46ae6ad	moderate-photo	moderate-photo	Server-side Gemini photo moderation. Reads API key from admin_config table (so admins can update it from the dashboard). Returns suggestion/confidence/reason JSON.	// Edge Function: moderate-photo\n// Runs server-side. Gemini API key is read from InsForge admin_config table\n// (key = 'gemini_api_key'), with fallback to Deno.env GEMINI_API_KEY.\n// Accepts: { storagePath: string, insforgeUrl: string, anonKey: string }\n// Returns: { suggestion: 'approve'|'reject', confidence: number, reason: string }\n\n/**\n * Fetch the Gemini API key from admin_config table, fallback to env var.\n */\nasync function getGeminiKey(insforgeUrl, anonKey) {\n  try {\n    const url = `${insforgeUrl}/api/database/records/admin_config?select=value&key=eq.gemini_api_key&limit=1`\n    const res = await fetch(url, {\n      headers: { Authorization: `Bearer ${anonKey}` }\n    })\n    if (res.ok) {\n      const rows = await res.json()\n      const row = Array.isArray(rows) ? rows[0] : (rows?.data?.[0])\n      if (row?.value) return row.value\n    }\n  } catch { /* fall through */ }\n  // Fallback to Deno environment variable\n  return Deno.env.get('GEMINI_API_KEY') ?? ''\n}\n\nasync function downloadPhoto(insforgeUrl, anonKey, storagePath) {\n  const url = `${insforgeUrl}/api/storage/buckets/photos/objects/${encodeURIComponent(storagePath)}`\n  const res = await fetch(url, {\n    headers: { Authorization: `Bearer ${anonKey}` }\n  })\n  if (!res.ok) throw new Error(`Storage download failed: ${res.status}`)\n  return res\n}\n\nasync function analyzeWithGemini(base64, mimeType, apiKey) {\n  if (!apiKey) throw new Error('Gemini API key not configured')\n  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`\n  const body = {\n    contents: [{\n      parts: [\n        { inline_data: { mime_type: mimeType, data: base64 } },\n        {\n          text: `Analyze this photo for content moderation at an event.\nRespond in JSON format only: {"suggestion": "approve" or "reject", "confidence": 0.0-1.0, "reason": "brief explanation"}\nApprove photos that are appropriate for a public event (people, scenery, food, celebrations).\nReject photos with explicit content, violence, hate symbols, or clearly inappropriate material.`\n        }\n      ]\n    }]\n  }\n  const res = await fetch(url, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(body)\n  })\n  if (!res.ok) {\n    const errText = await res.text().catch(() => res.status.toString())\n    throw new Error(`Gemini API error ${res.status}: ${errText}`)\n  }\n  const data = await res.json()\n  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''\n  const match = text.match(/\\{[\\s\\S]*\\}/)\n  if (match) {\n    const parsed = JSON.parse(match[0])\n    return {\n      suggestion: parsed.suggestion === 'reject' ? 'reject' : 'approve',\n      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.8,\n      reason: parsed.reason || 'Analysis completed'\n    }\n  }\n  return { suggestion: 'approve', confidence: 0.7, reason: 'Analysis completed (fallback)' }\n}\n\nmodule.exports = async function handler(request) {\n  const CORS = {\n    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Methods': 'POST, OPTIONS',\n    'Access-Control-Allow-Headers': 'Content-Type, Authorization'\n  }\n\n  if (request.method === 'OPTIONS') {\n    return new Response(null, { headers: CORS })\n  }\n\n  if (request.method !== 'POST') {\n    return new Response(JSON.stringify({ error: 'Method not allowed' }), {\n      status: 405, headers: { 'Content-Type': 'application/json', ...CORS }\n    })\n  }\n\n  try {\n    const { storagePath, insforgeUrl, anonKey } = await request.json()\n\n    if (!storagePath || !insforgeUrl || !anonKey) {\n      return new Response(JSON.stringify({ error: 'Missing required fields' }), {\n        status: 400, headers: { 'Content-Type': 'application/json', ...CORS }\n      })\n    }\n\n    // 1. Resolve Gemini key (admin_config takes priority over env var)\n    const apiKey = await getGeminiKey(insforgeUrl, anonKey)\n    if (!apiKey) {\n      return new Response(\n        JSON.stringify({ suggestion: 'approve', confidence: 0.0, reason: 'Gemini API key no configurada — revisar panel admin' }),\n        { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } }\n      )\n    }\n\n    // 2. Download photo from InsForge storage\n    const photoRes = await downloadPhoto(insforgeUrl, anonKey, storagePath)\n    const arrayBuffer = await photoRes.arrayBuffer()\n    const uint8 = new Uint8Array(arrayBuffer)\n    let binary = ''\n    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i])\n    const base64 = btoa(binary)\n    const mimeType = photoRes.headers.get('content-type') || 'image/jpeg'\n\n    // 3. Analyze with Gemini\n    const result = await analyzeWithGemini(base64, mimeType, apiKey)\n\n    return new Response(JSON.stringify(result), {\n      status: 200, headers: { 'Content-Type': 'application/json', ...CORS }\n    })\n  } catch (err) {\n    console.error('[moderate-photo]', err?.message ?? err)\n    return new Response(\n      JSON.stringify({\n        suggestion: 'approve',\n        confidence: 0.0,\n        reason: `Error en análisis: ${err?.message ?? 'desconocido'} — revisar manualmente`\n      }),\n      { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } }\n    )\n  }\n}\n	active	2026-02-24 20:09:44.227891+00	2026-02-24 20:27:28.142885+00	2026-02-24 20:27:28.141682+00
+\.
+
+
+--
+-- Data for Name: deployments; Type: TABLE DATA; Schema: functions; Owner: postgres
+--
+
+COPY functions.deployments (id, project_id, status, url, function_count, functions, error_message, build_logs, created_at) FROM stdin;
+n1k2032kxp28	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	1	["music-search"]	\N	\N	2026-02-22 16:40:54.393652+00
+w98e9rwgs0zr	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	1	["music-search"]	\N	\N	2026-02-22 16:44:18.542095+00
+3wq5wtzr7f3h	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	1	["music-search"]	\N	\N	2026-02-22 16:44:32.911965+00
+kp5qb3q889xr	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	1	["music-search"]	\N	\N	2026-02-22 16:49:01.145188+00
+knmaj7hk670s	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	1	["music-search"]	\N	\N	2026-02-22 17:01:21.476089+00
+ys8addtdzrxn	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	2	["music-search", "moderate-photo"]	\N	\N	2026-02-24 20:09:47.91889+00
+qg7h02z87r0b	465356aa-a8cc-46e8-83a4-f2e4faf06cb9	success	https://rrqj7kq5.functions.insforge.app	2	["music-search", "moderate-photo"]	\N	\N	2026-02-24 20:27:31.683903+00
+\.
+
+
+--
+-- Data for Name: admin_config; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.admin_config (key, value, updated_at) FROM stdin;
+spotify_client_id	bf43bf736d1e4edfb42ca962c6afa0a1	2026-02-22 16:51:09.964026+00
+spotify_client_secret	1466d6526dda40cf97c3cc08f49f4973	2026-02-22 16:51:09.964026+00
+youtube_api_key	AIzaSyDO1vGw_RXZA7HwropEB6dDD-4O1CcwW9g	2026-02-22 16:51:09.964026+00
+gemini_api_key	AIzaSyD32hNptl4NCw8vo7absEBW6mHjHzVz2lA	2026-02-24 20:32:11.057769+00
+\.
+
+
+--
+-- Data for Name: events; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.events (id, code, created_at, expires_at, creator_id, moderation_enabled, status) FROM stdin;
+1b5df4c4-8206-4732-a5bb-9d26e2256632	RYKG07	2026-02-22 16:13:57.099413+00	2026-02-23 16:13:56.44+00	anonymous	f	active
+bf714791-a20a-4641-9806-040e8c9ec722	JUT9BM	2026-02-22 16:44:43.883018+00	2026-02-23 16:44:43.193+00	anonymous	f	active
+6ae300e6-19c1-46e2-ab3a-70cdc425ad8a	A1D1EZ	2026-02-22 17:05:31.861934+00	2026-02-23 17:05:31.063+00	anonymous	f	active
+2d192752-3927-475d-aed1-ce853a32cc83	5ZJE2G	2026-02-23 09:49:47.300141+00	2026-02-24 09:49:46.577+00	anonymous	f	active
+b8bea9e8-9d6c-4db4-bc04-4e7b9d6f1ca4	E62RBC	2026-02-23 15:02:51.6964+00	2026-02-24 15:02:50.686+00	anonymous	f	active
+1dec419e-3b03-48a7-974d-4eb6ec808ff9	30Q0FE	2026-02-23 15:07:00.091019+00	2026-02-24 15:06:59.534+00	anonymous	f	active
+0778351d-59f0-43e2-b30e-53eb8a176c6e	5X43DG	2026-02-24 19:06:36.474427+00	2026-02-25 19:06:36.142+00	c4637df4-8b12-40d4-a3d9-c3532f766dad	f	active
+4925427b-88c7-4308-885c-73e1c81561aa	NMLH4V	2026-02-24 19:53:53.870037+00	2026-02-25 19:53:53.475+00	689943f9-5bd6-401c-920e-75bb55d4b28b	f	active
+35446bc3-13e0-4c30-a9d6-06466e92f4df	RC82LD	2026-02-24 20:13:43.792036+00	2026-02-25 20:13:43.562+00	689943f9-5bd6-401c-920e-75bb55d4b28b	t	active
+\.
+
+
+--
+-- Data for Name: jukebox_queue; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.jukebox_queue (id, event_id, track_id, spotify_track_id, title, artist, album_art, genre, votes, voters, status, provider, created_at, preview_url) FROM stdin;
+5f7079a3-396f-4407-a7d7-30f885d5719e	1b5df4c4-8206-4732-a5bb-9d26e2256632	w8l33K5D5CI	w8l33K5D5CI	Beéle, Ovy On The Drums - mi refe (Video Oficial)	BeeleVEVO	https://i.ytimg.com/vi/w8l33K5D5CI/hqdefault.jpg	unknown	2	["me"]	pending	youtube	2026-02-22 16:14:13.07362+00	\N
+b654a165-a8e9-4045-a51d-344701d94f51	bf714791-a20a-4641-9806-040e8c9ec722	51FvjPEGKq2zByeeEQ43V9	51FvjPEGKq2zByeeEQ43V9	El Merengue	Marshmello, Manuel Turizo	https://i.scdn.co/image/ab67616d0000b273bef51a8d2e9c2261a84cb680	unknown	1	["me"]	pending	spotify	2026-02-22 16:52:30.642488+00	\N
+714c67b4-0cf7-4e79-af9c-0cafe06e609f	bf714791-a20a-4641-9806-040e8c9ec722	7ricDBUakN3N0YkkKE8Obu	7ricDBUakN3N0YkkKE8Obu	mi refe	Beéle, Ovy On The Drums	https://i.scdn.co/image/ab67616d0000b273fadf4f897c40ac7a63c6b458	unknown	3	["me"]	pending	spotify	2026-02-22 16:52:11.328733+00	\N
+c859ffcd-8d6a-417f-a9b9-ca34674359c9	6ae300e6-19c1-46e2-ab3a-70cdc425ad8a	7ricDBUakN3N0YkkKE8Obu	7ricDBUakN3N0YkkKE8Obu	mi refe	Beéle, Ovy On The Drums	https://i.scdn.co/image/ab67616d0000b273fadf4f897c40ac7a63c6b458	unknown	1	["me"]	pending	spotify	2026-02-22 17:05:43.629516+00	\N
+7d3c0ef9-37ac-4370-8b28-5553ac9f078a	6ae300e6-19c1-46e2-ab3a-70cdc425ad8a	51FvjPEGKq2zByeeEQ43V9	51FvjPEGKq2zByeeEQ43V9	El Merengue	Marshmello, Manuel Turizo	https://i.scdn.co/image/ab67616d0000b273bef51a8d2e9c2261a84cb680	unknown	1	["me"]	pending	spotify	2026-02-22 17:06:02.460784+00	\N
+a2e933be-113d-4903-b757-26ae66975954	6ae300e6-19c1-46e2-ab3a-70cdc425ad8a	4cG7HUWYHBV6R6tHn1gxrl	4cG7HUWYHBV6R6tHn1gxrl	Friday (feat. Mufasa & Hypeman) - Dopamine Re-Edit	Riton, Nightcrawlers, Mufasa & Hypeman, Mufasa, Dopamine	https://i.scdn.co/image/ab67616d0000b273815cb538fd7821595b2bc8c5	unknown	2	["me"]	pending	spotify	2026-02-22 17:09:10.902685+00	\N
+d6e4bb24-401e-4726-ba42-08a2886b4966	bf714791-a20a-4641-9806-040e8c9ec722	4cG7HUWYHBV6R6tHn1gxrl	4cG7HUWYHBV6R6tHn1gxrl	Friday (feat. Mufasa & Hypeman) - Dopamine Re-Edit	Riton, Nightcrawlers, Mufasa & Hypeman, Mufasa, Dopamine	https://i.scdn.co/image/ab67616d0000b273815cb538fd7821595b2bc8c5	unknown	1	["me"]	pending	spotify	2026-02-22 19:54:01.709525+00	\N
+dfb9c3d9-fc82-4751-bfca-3265ea8520ab	bf714791-a20a-4641-9806-040e8c9ec722	4cG7HUWYHBV6R6tHn1gxrl	4cG7HUWYHBV6R6tHn1gxrl	Friday (feat. Mufasa & Hypeman) - Dopamine Re-Edit	Riton, Nightcrawlers, Mufasa & Hypeman, Mufasa, Dopamine	https://i.scdn.co/image/ab67616d0000b273815cb538fd7821595b2bc8c5	unknown	1	["me"]	pending	spotify	2026-02-22 19:54:03.088537+00	\N
+a9b9e233-7db8-43ab-812f-ae2bae859062	bf714791-a20a-4641-9806-040e8c9ec722	4i7LiTgRjxjlf8PMwRpxEy	4i7LiTgRjxjlf8PMwRpxEy	La Soltería	Diego Daza, Carlos Rueda	https://i.scdn.co/image/ab67616d0000b27327ed5e1f22de5ec85e2919e3	unknown	1	["me"]	pending	spotify	2026-02-23 09:33:35.985328+00	\N
+e21d8b14-b841-4a50-bf5a-03f068de5db9	2d192752-3927-475d-aed1-ce853a32cc83	7ricDBUakN3N0YkkKE8Obu	7ricDBUakN3N0YkkKE8Obu	mi refe	Beéle, Ovy On The Drums	https://i.scdn.co/image/ab67616d0000b273fadf4f897c40ac7a63c6b458	unknown	1	["me"]	pending	spotify	2026-02-23 09:50:00.421984+00	\N
+366c38ff-2f3b-47b5-b327-05763a4aedb0	b8bea9e8-9d6c-4db4-bc04-4e7b9d6f1ca4	7ricDBUakN3N0YkkKE8Obu	7ricDBUakN3N0YkkKE8Obu	mi refe	Beéle, Ovy On The Drums	https://i.scdn.co/image/ab67616d0000b273fadf4f897c40ac7a63c6b458	unknown	1	["me"]	pending	spotify	2026-02-23 15:03:11.256578+00	\N
+e5fe96ee-1abc-435d-8b85-8023d7799d8b	b8bea9e8-9d6c-4db4-bc04-4e7b9d6f1ca4	51FvjPEGKq2zByeeEQ43V9	51FvjPEGKq2zByeeEQ43V9	El Merengue	Marshmello, Manuel Turizo	https://i.scdn.co/image/ab67616d0000b273bef51a8d2e9c2261a84cb680	unknown	2	["me"]	pending	spotify	2026-02-23 15:04:29.738844+00	\N
+\.
+
+
+--
+-- Data for Name: jukebox_settings; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.jukebox_settings (event_id, is_active, vibe_filters, spotify_playlist_id, provider, created_at) FROM stdin;
+b8bea9e8-9d6c-4db4-bc04-4e7b9d6f1ca4	t	{}	\N	youtube	2026-02-23 15:02:52.364439+00
+1dec419e-3b03-48a7-974d-4eb6ec808ff9	t	{}	\N	spotify	2026-02-23 15:07:00.449269+00
+0778351d-59f0-43e2-b30e-53eb8a176c6e	t	{}	\N	spotify	2026-02-24 19:06:36.758865+00
+4925427b-88c7-4308-885c-73e1c81561aa	t	{}	\N	spotify	2026-02-24 19:53:54.12201+00
+1b5df4c4-8206-4732-a5bb-9d26e2256632	f	{}	\N	youtube	2026-02-22 16:13:57.361229+00
+bf714791-a20a-4641-9806-040e8c9ec722	f	{}	\N	spotify	2026-02-22 16:44:44.184012+00
+6ae300e6-19c1-46e2-ab3a-70cdc425ad8a	f	{}	\N	spotify	2026-02-22 17:05:32.101444+00
+2d192752-3927-475d-aed1-ce853a32cc83	f	{}	\N	spotify	2026-02-23 09:49:47.658284+00
+35446bc3-13e0-4c30-a9d6-06466e92f4df	t	{}	\N	spotify	2026-02-24 20:13:44.070773+00
+\.
+
+
+--
+-- Data for Name: moderation_actions; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.moderation_actions (id, photo_id, moderator_id, action, reason, actioned_at) FROM stdin;
+5c3659e3-83da-4709-b775-5e3f74ddd57a	4da4631a-edb7-495e-9323-888a4d7a8570	689943f9-5bd6-401c-920e-75bb55d4b28b	approve	\N	2026-02-24 20:56:44.115485+00
+8d479e40-cc4f-461f-ad19-56ff72f4ce3f	94854c78-fa1b-4b51-a279-3b741d140d43	689943f9-5bd6-401c-920e-75bb55d4b28b	approve	\N	2026-02-24 20:56:45.682515+00
+a45a7983-3c06-4609-b1cc-133bc58d5e7b	562f2f6c-6489-40dd-9b1b-e16bc445dd30	689943f9-5bd6-401c-920e-75bb55d4b28b	approve	\N	2026-02-24 20:56:47.131224+00
+ef27ce09-d3ca-4417-9bd9-abea4862827d	a2835f22-bb51-4a88-9f56-27065b7909f5	689943f9-5bd6-401c-920e-75bb55d4b28b	approve	\N	2026-02-24 20:56:48.409874+00
+\.
+
+
+--
+-- Data for Name: moderation_queues; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.moderation_queues (id, photo_id, queued_at, gemini_suggestion, confidence_score, processed, error_message) FROM stdin;
+dc0b87c3-6117-421b-9624-baf485b6323f	4da4631a-edb7-495e-9323-888a4d7a8570	2026-02-24 20:13:58.753241+00	approve	0	t	Error en análisis: Gemini API error 429: {\n  "error": {\n    "code": 429,\n    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\\nPlease retry in 10.631221108s.",\n    "status": "RESOURCE_EXHAUSTED",\n    "details": [\n      {\n        "@type": "type.googleapis.com/google.rpc.Help",\n        "links": [\n          {\n            "description": "Learn more about Gemini API quotas",\n            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n        "violations": [\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",\n            "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n        "retryDelay": "10s"\n      }\n    ]\n  }\n}\n — revisar manualmente
+349a8af6-4321-4f0f-8fc6-c0cb4609f771	94854c78-fa1b-4b51-a279-3b741d140d43	2026-02-24 20:13:59.795875+00	approve	0	t	Error en análisis: Gemini API error 429: {\n  "error": {\n    "code": 429,\n    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\\nPlease retry in 9.09469592s.",\n    "status": "RESOURCE_EXHAUSTED",\n    "details": [\n      {\n        "@type": "type.googleapis.com/google.rpc.Help",\n        "links": [\n          {\n            "description": "Learn more about Gemini API quotas",\n            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n        "violations": [\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",\n            "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n        "retryDelay": "9s"\n      }\n    ]\n  }\n}\n — revisar manualmente
+7cbf022e-fa9d-4da5-a889-dbb861622552	562f2f6c-6489-40dd-9b1b-e16bc445dd30	2026-02-24 20:14:00.680708+00	approve	0	t	Error en análisis: Gemini API error 429: {\n  "error": {\n    "code": 429,\n    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\\nPlease retry in 7.562830867s.",\n    "status": "RESOURCE_EXHAUSTED",\n    "details": [\n      {\n        "@type": "type.googleapis.com/google.rpc.Help",\n        "links": [\n          {\n            "description": "Learn more about Gemini API quotas",\n            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n        "violations": [\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",\n            "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n        "retryDelay": "7s"\n      }\n    ]\n  }\n}\n — revisar manualmente
+79350469-530c-4388-8aff-ad766eb3ad56	a2835f22-bb51-4a88-9f56-27065b7909f5	2026-02-24 20:14:01.616377+00	approve	0	t	Error en análisis: Gemini API error 429: {\n  "error": {\n    "code": 429,\n    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\\nPlease retry in 6.591928581s.",\n    "status": "RESOURCE_EXHAUSTED",\n    "details": [\n      {\n        "@type": "type.googleapis.com/google.rpc.Help",\n        "links": [\n          {\n            "description": "Learn more about Gemini API quotas",\n            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.QuotaFailure",\n        "violations": [\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",\n            "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",\n            "quotaDimensions": {\n              "location": "global",\n              "model": "gemini-2.0-flash"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "model": "gemini-2.0-flash",\n              "location": "global"\n            }\n          },\n          {\n            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",\n            "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",\n            "quotaDimensions": {\n              "model": "gemini-2.0-flash",\n              "location": "global"\n            }\n          }\n        ]\n      },\n      {\n        "@type": "type.googleapis.com/google.rpc.RetryInfo",\n        "retryDelay": "6s"\n      }\n    ]\n  }\n}\n — revisar manualmente
+\.
+
+
+--
+-- Data for Name: photos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.photos (id, event_id, storage_path, storage_url, caption, status, uploaded_by, uploaded_at) FROM stdin;
+651e756a-f32f-4330-b52a-2ca0323f1465	1dec419e-3b03-48a7-974d-4eb6ec808ff9	events/1dec419e-3b03-48a7-974d-4eb6ec808ff9/1771859319151-WhatsApp Image 2026-02-16 at 7.27.49 PM.jpeg	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F1dec419e-3b03-48a7-974d-4eb6ec808ff9%2F1771859319151-WhatsApp%20Image%202026-02-16%20at%207.27.49%20PM.jpeg	\N	approved	anonymous	2026-02-23 15:08:42.5235+00
+00f9b269-34a1-4817-a2b0-91ea6bf94277	1dec419e-3b03-48a7-974d-4eb6ec808ff9	events/1dec419e-3b03-48a7-974d-4eb6ec808ff9/1771859322735-474831881_958886066337273_434227653592195361_n.jpg	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F1dec419e-3b03-48a7-974d-4eb6ec808ff9%2F1771859322735-474831881_958886066337273_434227653592195361_n.jpg	\N	approved	anonymous	2026-02-23 15:08:43.986529+00
+f9231ccf-c7b6-4bb5-aafa-b2ca034f29f0	4925427b-88c7-4308-885c-73e1c81561aa	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962863786-perfil_del_negocio.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F4925427b-88c7-4308-885c-73e1c81561aa%2F1771962863786-perfil_del_negocio.png.png	\N	approved	anonymous	2026-02-24 19:54:26.267957+00
+aad30eae-e629-4b4e-9305-0b48f580524d	4925427b-88c7-4308-885c-73e1c81561aa	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962866311-perfil_del_creador.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F4925427b-88c7-4308-885c-73e1c81561aa%2F1771962866311-perfil_del_creador.png.png	\N	approved	anonymous	2026-02-24 19:54:27.130582+00
+ec989226-5c5e-4272-8bb7-6c83529667e6	4925427b-88c7-4308-885c-73e1c81561aa	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962867127-perfil_del_cliente.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F4925427b-88c7-4308-885c-73e1c81561aa%2F1771962867127-perfil_del_cliente.png.png	\N	approved	anonymous	2026-02-24 19:54:27.818228+00
+e1ce2b7d-77d3-4585-8415-1cb903bd0489	4925427b-88c7-4308-885c-73e1c81561aa	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962867883-inicio_1.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F4925427b-88c7-4308-885c-73e1c81561aa%2F1771962867883-inicio_1.png.png	\N	approved	anonymous	2026-02-24 19:54:28.629501+00
+4da4631a-edb7-495e-9323-888a4d7a8570	35446bc3-13e0-4c30-a9d6-06466e92f4df	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964036024-perfil_del_negocio.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F35446bc3-13e0-4c30-a9d6-06466e92f4df%2F1771964036024-perfil_del_negocio.png.png	\N	approved	anonymous	2026-02-24 20:13:58.487941+00
+94854c78-fa1b-4b51-a279-3b741d140d43	35446bc3-13e0-4c30-a9d6-06466e92f4df	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964038760-perfil_del_creador.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F35446bc3-13e0-4c30-a9d6-06466e92f4df%2F1771964038760-perfil_del_creador.png.png	\N	approved	anonymous	2026-02-24 20:13:59.621994+00
+562f2f6c-6489-40dd-9b1b-e16bc445dd30	35446bc3-13e0-4c30-a9d6-06466e92f4df	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964039800-perfil_del_cliente.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F35446bc3-13e0-4c30-a9d6-06466e92f4df%2F1771964039800-perfil_del_cliente.png.png	\N	approved	anonymous	2026-02-24 20:14:00.57153+00
+a2835f22-bb51-4a88-9f56-27065b7909f5	35446bc3-13e0-4c30-a9d6-06466e92f4df	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964040742-inicio_1.png.png	https://rrqj7kq5.us-east.insforge.app/api/storage/buckets/photos/objects/events%2F35446bc3-13e0-4c30-a9d6-06466e92f4df%2F1771964040742-inicio_1.png.png	\N	approved	anonymous	2026-02-24 20:14:01.493608+00
+\.
+
+
+--
+-- Data for Name: plans; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.plans (id, name, features, price) FROM stdin;
+trial_pro	Trial Pro (24h)	{"gallery": true, "tv_mode": true, "is_trial": true, "playlist": true, "trial_days": 1, "white_label": true, "max_storage_gb": 10}	0
+basic	Básico (Solo Playlist)	{"gallery": false, "tv_mode": false, "playlist": true, "trial_days": 0, "white_label": false, "max_storage_gb": 0.5}	50000
+pro	Pro (Playlist + Galería)	{"gallery": true, "tv_mode": true, "playlist": true, "trial_days": 0, "white_label": true, "max_storage_gb": 10}	100000
+\.
+
+
+--
+-- Data for Name: user_profiles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.user_profiles (id, email, role, plan_id, status, created_at, full_name, instagram_username, custom_logo_url) FROM stdin;
+c4637df4-8b12-40d4-a3d9-c3532f766dad	elhacker123@gmail.com	user	basic	active	2026-02-24 18:51:18.205488+00	KCJoKeR	kcjoker	\N
+689943f9-5bd6-401c-920e-75bb55d4b28b	jquintedori@gmail.com	admin	pro	active	2026-02-24 18:48:16.506098+00	Jorge Quintero	jorgequinterodj	https://i.ibb.co/Z1HbGm3F/Gemini-Generated-Image-kvpw0jkvpw0jkvpw.png
+\.
+
+
+--
+-- Data for Name: user_subscriptions; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.user_subscriptions (id, user_id, plan_id, status, external_subscription_id, current_period_end, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: channels; Type: TABLE DATA; Schema: realtime; Owner: postgres
+--
+
+COPY realtime.channels (id, pattern, description, webhook_urls, enabled, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: messages; Type: TABLE DATA; Schema: realtime; Owner: postgres
+--
+
+COPY realtime.messages (id, event_name, channel_id, channel_name, payload, sender_type, sender_id, ws_audience_count, wh_audience_count, wh_delivered_count, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: job_logs; Type: TABLE DATA; Schema: schedules; Owner: postgres
+--
+
+COPY schedules.job_logs (id, job_id, executed_at, status_code, success, duration_ms, message) FROM stdin;
+\.
+
+
+--
+-- Data for Name: jobs; Type: TABLE DATA; Schema: schedules; Owner: postgres
+--
+
+COPY schedules.jobs (id, name, cron_schedule, function_url, http_method, encrypted_headers, headers, body, is_active, cron_job_id, last_executed_at, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: buckets; Type: TABLE DATA; Schema: storage; Owner: postgres
+--
+
+COPY storage.buckets (name, public, created_at, updated_at) FROM stdin;
+photos	t	2026-02-22 16:07:49.130861+00	2026-02-22 16:07:49.130861+00
+\.
+
+
+--
+-- Data for Name: objects; Type: TABLE DATA; Schema: storage; Owner: postgres
+--
+
+COPY storage.objects (bucket, key, size, mime_type, uploaded_at, uploaded_by) FROM stdin;
+photos	events/1dec419e-3b03-48a7-974d-4eb6ec808ff9/1771859319151-WhatsApp Image 2026-02-16 at 7.27.49 PM.jpeg	193698	image/jpeg	2026-02-23 15:08:41.666732+00	12345678-1234-5678-90ab-cdef12345678
+photos	events/1dec419e-3b03-48a7-974d-4eb6ec808ff9/1771859322735-474831881_958886066337273_434227653592195361_n.jpg	3798	image/jpeg	2026-02-23 15:08:43.530487+00	12345678-1234-5678-90ab-cdef12345678
+photos	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962863786-perfil_del_negocio.png.png	2206945	image/png	2026-02-24 19:54:25.697919+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962866311-perfil_del_creador.png.png	2217783	image/png	2026-02-24 19:54:26.855757+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962867127-perfil_del_cliente.png.png	2182274	image/png	2026-02-24 19:54:27.604331+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/4925427b-88c7-4308-885c-73e1c81561aa/1771962867883-inicio_1.png.png	1979758	image/png	2026-02-24 19:54:28.350532+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964036024-perfil_del_negocio.png.png	2206945	image/png	2026-02-24 20:13:57.965821+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964038760-perfil_del_creador.png.png	2217783	image/png	2026-02-24 20:13:59.39383+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964039800-perfil_del_cliente.png.png	2182274	image/png	2026-02-24 20:14:00.331602+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+photos	events/35446bc3-13e0-4c30-a9d6-06466e92f4df/1771964040742-inicio_1.png.png	1979758	image/png	2026-02-24 20:14:01.217506+00	689943f9-5bd6-401c-920e-75bb55d4b28b
+\.
+
+
+--
+-- Data for Name: audit_logs; Type: TABLE DATA; Schema: system; Owner: postgres
+--
+
+COPY system.audit_logs (id, actor, action, module, details, ip_address, created_at, updated_at) FROM stdin;
+4a177e6d-7cb0-41a8-a832-39bc59454469	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.21.21.31	2026-02-22 13:16:22.856002+00	2026-02-22 13:16:22.856002+00
+51fec873-79a8-46ce-80d5-88499a43692b	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.144.169.142	2026-02-22 16:02:34.46266+00	2026-02-22 16:02:34.46266+00
+b00f662b-259b-4509-b049-5ff0807ae032	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	18.223.136.193	2026-02-22 16:03:59.909767+00	2026-02-22 16:03:59.909767+00
+7c6ef125-b9e7-409e-a9c7-057074bf9d31	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT datname FROM pg_database WHERE datistemplate = false;", "paramCount": 0, "rowsAffected": 3}	191.108.166.153	2026-02-22 16:06:18.092392+00	2026-02-22 16:06:18.092392+00
+5263817f-fd80-4002-91da-91aa4b013e9f	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;", "paramCount": 0, "rowsAffected": 0}	191.108.166.153	2026-02-22 16:06:29.147541+00	2026-02-22 16:06:29.147541+00
+8c06f0df-515c-4f5e-bdd1-f61ee9450069	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "\\n-- Create events table\\nCREATE TABLE IF NOT EXISTS events (\\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\\n  code VARCHAR(6) NOT NULL UNIQUE,\\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\\n  expires_at TIMESTAMPTZ NOT NULL,\\n  creator_id TEXT NOT NULL DEFAULT 'anonymous',\\n  moderation_enabled BOO", "paramCount": 0}	191.108.166.153	2026-02-22 16:07:42.50939+00	2026-02-22 16:07:42.50939+00
+a7ee02a6-dd9c-4c8b-b0a4-af9e85bcd28f	api-key	CREATE_BUCKET	STORAGE	{"isPublic": true, "bucketName": "photos"}	191.108.166.153	2026-02-22 16:07:49.137779+00	2026-02-22 16:07:49.137779+00
+eb60d7b6-c199-49bc-86fd-f84952db1a89	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;", "paramCount": 0, "rowsAffected": 7}	191.108.166.153	2026-02-22 16:08:00.37018+00	2026-02-22 16:08:00.37018+00
+11700f83-86ff-4185-bea0-136e07d4e8fb	api-key	CREATE_DEPLOYMENT	DEPLOYMENTS	{"id": "15c8c0cd-d41f-4a41-adcc-c2c19b329f48"}	191.108.166.153	2026-02-22 16:08:27.146022+00	2026-02-22 16:08:27.146022+00
+31ce3e5e-b9d1-416c-aa18-cfbda95e89a8	api-key	START_DEPLOYMENT	DEPLOYMENTS	{"id": "15c8c0cd-d41f-4a41-adcc-c2c19b329f48", "status": "INITIALIZING", "provider": "vercel", "providerDeploymentId": "dpl_CGD9F21vLVfJqtLWjCx6oxbFvRb5"}	191.108.166.153	2026-02-22 16:08:32.765108+00	2026-02-22 16:08:32.765108+00
+7dc09fdc-6680-4047-a3ce-0114b20111df	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT id, status, url, created_at FROM system.deployments ORDER BY created_at DESC LIMIT 1;", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-22 16:09:01.998618+00	2026-02-22 16:09:01.998618+00
+cdae5157-e2b7-4832-a9ed-9e0ebab089d7	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT id, status, url FROM system.deployments ORDER BY created_at DESC LIMIT 1;", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-22 16:09:45.052694+00	2026-02-22 16:09:45.052694+00
+0e7ce0e6-db80-48eb-9875-dae4345a7d7f	api-key	CREATE_DEPLOYMENT	DEPLOYMENTS	{"id": "1e91a066-a272-48aa-aa3b-3be9ee934113"}	191.108.166.153	2026-02-22 16:12:17.563317+00	2026-02-22 16:12:17.563317+00
+a487205d-bfa4-42b3-b4e7-917ae1f846b4	api-key	START_DEPLOYMENT	DEPLOYMENTS	{"id": "1e91a066-a272-48aa-aa3b-3be9ee934113", "status": "INITIALIZING", "provider": "vercel", "providerDeploymentId": "dpl_F4AuvxXPHJP1YLsLng5Xyh9njFGx"}	191.108.166.153	2026-02-22 16:12:21.706214+00	2026-02-22 16:12:21.706214+00
+37e01b85-424b-451d-8218-b635c4870318	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT id, status, url FROM system.deployments ORDER BY created_at DESC LIMIT 1;", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-22 16:12:38.81745+00	2026-02-22 16:12:38.81745+00
+ab62d2a0-7582-4912-b991-192d486c6223	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT id, status, url FROM system.deployments ORDER BY created_at DESC LIMIT 1;", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-22 16:13:42.440737+00	2026-02-22 16:13:42.440737+00
+a9349c93-3305-4977-937c-d2153f303e4f	admin@insforge.local	UPDATE_DEPLOYMENT_SLUG	DEPLOYMENTS	{"slug": "eventsnaps", "domain": "eventsnaps.insforge.site"}	191.108.166.153	2026-02-22 16:17:42.325246+00	2026-02-22 16:17:42.325246+00
+8b8b74a0-4d72-497e-a1db-65ea0d42de0d	admin@insforge.local	UPSERT_ENV_VAR	DEPLOYMENTS	{"key": "VITE_GEMINI_API_KEY"}	191.108.166.153	2026-02-22 16:18:47.849882+00	2026-02-22 16:18:47.849882+00
+cd157a2f-f5dc-459a-bb77-29fd18db8491	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.21.21.31	2026-02-22 16:37:18.955568+00	2026-02-22 16:37:18.955568+00
+1dc53013-6bd4-4fd7-852c-48ac2ed77fa6	api-key	CREATE_FUNCTION	FUNCTIONS	{"name": "Music Search", "slug": "music-search", "status": "active", "functionId": "6a727273-9c3b-4633-bf42-a262c9c7c3b1"}	191.108.166.153	2026-02-22 16:40:50.757401+00	2026-02-22 16:40:50.757401+00
+07d3872f-e719-41ea-a0bd-39f754bb10a2	admin@insforge.local	CREATE_SECRET	SECRETS	{"id": "99ac4266-f407-4760-ad21-2194f7b8acc9", "key": "SPOTIFY_CLIENT_ID"}	191.108.166.153	2026-02-22 16:44:16.13997+00	2026-02-22 16:44:16.13997+00
+755770fb-0207-48ed-beb8-f5583e95bab5	admin@insforge.local	CREATE_SECRET	SECRETS	{"id": "3dd11c60-d8ff-4dfd-92de-b37de75024d5", "key": "SPOTIFY_CLIENT_SECRET"}	191.108.166.153	2026-02-22 16:44:30.672678+00	2026-02-22 16:44:30.672678+00
+34ac3e00-4e80-4c0c-b813-e4bda2bd6f31	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT * FROM admin_config WHERE key IN ('spotify_client_id', 'spotify_client_secret')", "paramCount": 0, "rowsAffected": 0}	191.108.166.153	2026-02-22 16:47:16.428752+00	2026-02-22 16:47:16.428752+00
+9f97d5c0-439d-453c-97d4-34272876e4a9	api-key	UPDATE_FUNCTION	FUNCTIONS	{"slug": "music-search", "changes": {"code": "import { createClient } from 'npm:@insforge/sdk';\\n\\nexport default async function(req) {\\n  const corsHeaders = {\\n    'Access-Control-Allow-Origin': '*',\\n    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',\\n    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',\\n  };\\n\\n  if (req.method === 'OPTIONS') {\\n    return new Response(null, { status: 204, headers: corsHeaders });\\n  }\\n\\n  try {\\n    const body = await req.json().catch(() => ({}));\\n    const { action, query } = body;\\n\\n    // Get Spotify credentials from admin_config table\\n    const client = createClient({\\n      baseUrl: Deno.env.get('INSFORGE_BASE_URL'),\\n      anonKey: Deno.env.get('ANON_KEY'),\\n    });\\n\\n    const { data: config, error: configError } = await client.database\\n      .from('admin_config')\\n      .select('key, value')\\n      .in('key', ['spotify_client_id', 'spotify_client_secret', 'youtube_api_key']);\\n\\n    if (configError || !config) {\\n      throw new Error('Could not load configuration');\\n    }\\n\\n    // --- YouTube Search ---\\n    if (action === 'search_youtube') {\\n      const apiKey = config.find(c => c.key === 'youtube_api_key')?.value;\\n      if (!apiKey) {\\n        return new Response(JSON.stringify({ error: 'YouTube API Key not configured' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n      if (!query) {\\n        return new Response(JSON.stringify({ error: 'Query is required' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      const res = await fetch(\\n        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=10`\\n      );\\n      const data = await res.json();\\n\\n      if (!res.ok) {\\n        return new Response(JSON.stringify({ error: data.error?.message || 'YouTube search failed' }), {\\n          status: res.status,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      const tracks = data.items.map((item) => ({\\n        id: item.id.videoId,\\n        title: item.snippet.title,\\n        artist: item.snippet.channelTitle,\\n        album_art: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url || null,\\n        preview_url: null,\\n        provider: 'youtube',\\n      }));\\n\\n      return new Response(JSON.stringify({ tracks }), {\\n        status: 200,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    // --- Spotify Search ---\\n    if (action === 'search_spotify') {\\n      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\\n      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\\n\\n      if (!clientId || !clientSecret) {\\n        return new Response(JSON.stringify({ error: 'Spotify credentials not configured. Add them in Admin Dashboard.' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n      if (!query) {\\n        return new Response(JSON.stringify({ error: 'Query is required' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      // 1. Get access token using Client Credentials flow\\n      const authString = btoa(`${clientId}:${clientSecret}`);\\n      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {\\n        method: 'POST',\\n        headers: {\\n          Authorization: `Basic ${authString}`,\\n          'Content-Type': 'application/x-www-form-urlencoded',\\n        },\\n        body: 'grant_type=client_credentials',\\n      });\\n\\n      const tokenData = await tokenRes.json();\\n      if (!tokenRes.ok) {\\n        return new Response(\\n          JSON.stringify({ error: tokenData.error_description || 'Failed to get Spotify token' }),\\n          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }\\n        );\\n      }\\n\\n      // 2. Search Spotify tracks\\n      const searchRes = await fetch(\\n        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`,\\n        {\\n          headers: { Authorization: `Bearer ${tokenData.access_token}` },\\n        }\\n      );\\n\\n      const searchData = await searchRes.json();\\n      if (!searchRes.ok) {\\n        return new Response(\\n          JSON.stringify({ error: searchData.error?.message || 'Spotify search failed' }),\\n          { status: searchRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }\\n        );\\n      }\\n\\n      const tracks = searchData.tracks.items.map((track) => ({\\n        id: track.id,\\n        title: track.name,\\n        artist: track.artists.map(a => a.name).join(', '),\\n        album_art: track.album.images?.[0]?.url || null,\\n        preview_url: track.preview_url || null,\\n        provider: 'spotify',\\n      }));\\n\\n      return new Response(JSON.stringify({ tracks }), {\\n        status: 200,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    // --- Default: Get Spotify Token ---\\n    const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\\n    const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\\n\\n    if (!clientId || !clientSecret) {\\n      return new Response(JSON.stringify({ error: 'Spotify credentials not configured' }), {\\n        status: 400,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    const authString = btoa(`${clientId}:${clientSecret}`);\\n    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {\\n      method: 'POST',\\n      headers: {\\n        Authorization: `Basic ${authString}`,\\n        'Content-Type': 'application/x-www-form-urlencoded',\\n      },\\n      body: 'grant_type=client_credentials',\\n    });\\n\\n    const tokenResult = await tokenResponse.json();\\n    if (!tokenResponse.ok) {\\n      throw new Error(tokenResult.error_description || 'Failed to get Spotify token');\\n    }\\n\\n    return new Response(JSON.stringify(tokenResult), {\\n      status: 200,\\n      headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n    });\\n  } catch (e) {\\n    return new Response(JSON.stringify({ error: String(e) }), {\\n      status: 500,\\n      headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n    });\\n  }\\n}\\n", "status": "active"}}	191.108.166.153	2026-02-22 16:48:58.46702+00	2026-02-22 16:48:58.46702+00
+05f74c8c-799c-4c50-b4ce-5715e3137b6b	api-key	UPDATE_FUNCTION	FUNCTIONS	{"slug": "music-search", "changes": {"code": "import { createClient } from 'npm:@insforge/sdk';\\n\\nexport default async function(req) {\\n  const corsHeaders = {\\n    'Access-Control-Allow-Origin': '*',\\n    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',\\n    'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',\\n  };\\n\\n  if (req.method === 'OPTIONS') {\\n    return new Response(null, { status: 204, headers: corsHeaders });\\n  }\\n\\n  try {\\n    const body = await req.json().catch(() => ({}));\\n    const { action, query, artists } = body;\\n\\n    // Get Spotify credentials from admin_config table\\n    const client = createClient({\\n      baseUrl: Deno.env.get('INSFORGE_BASE_URL'),\\n      anonKey: Deno.env.get('ANON_KEY'),\\n    });\\n\\n    const { data: config, error: configError } = await client.database\\n      .from('admin_config')\\n      .select('key, value')\\n      .in('key', ['spotify_client_id', 'spotify_client_secret', 'youtube_api_key']);\\n\\n    if (configError || !config) {\\n      throw new Error('Could not load configuration');\\n    }\\n\\n    // --- YouTube Search ---\\n    if (action === 'search_youtube') {\\n      const apiKey = config.find(c => c.key === 'youtube_api_key')?.value;\\n      if (!apiKey) {\\n        return new Response(JSON.stringify({ error: 'YouTube API Key not configured' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n      if (!query) {\\n        return new Response(JSON.stringify({ error: 'Query is required' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      const res = await fetch(\\n        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${apiKey}&maxResults=10`\\n      );\\n      const data = await res.json();\\n\\n      if (!res.ok) {\\n        return new Response(JSON.stringify({ error: data.error?.message || 'YouTube search failed' }), {\\n          status: res.status,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      const tracks = data.items.map((item) => ({\\n        id: item.id.videoId,\\n        title: item.snippet.title,\\n        artist: item.snippet.channelTitle,\\n        album_art: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url || null,\\n        preview_url: null,\\n        provider: 'youtube',\\n      }));\\n\\n      return new Response(JSON.stringify({ tracks }), {\\n        status: 200,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    // --- Spotify Search ---\\n    if (action === 'search_spotify') {\\n      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\\n      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\\n\\n      if (!clientId || !clientSecret) {\\n        return new Response(JSON.stringify({ error: 'Spotify credentials not configured. Add them in Admin Dashboard.' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n      if (!query) {\\n        return new Response(JSON.stringify({ error: 'Query is required' }), {\\n          status: 400,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      // 1. Get access token using Client Credentials flow\\n      const authString = btoa(`${clientId}:${clientSecret}`);\\n      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {\\n        method: 'POST',\\n        headers: {\\n          Authorization: `Basic ${authString}`,\\n          'Content-Type': 'application/x-www-form-urlencoded',\\n        },\\n        body: 'grant_type=client_credentials',\\n      });\\n\\n      const tokenData = await tokenRes.json();\\n      if (!tokenRes.ok) {\\n        return new Response(\\n          JSON.stringify({ error: tokenData.error_description || 'Failed to get Spotify token' }),\\n          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }\\n        );\\n      }\\n\\n      // 2. Search Spotify tracks\\n      const searchRes = await fetch(\\n        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`,\\n        {\\n          headers: { Authorization: `Bearer ${tokenData.access_token}` },\\n        }\\n      );\\n\\n      const searchData = await searchRes.json();\\n      if (!searchRes.ok) {\\n        return new Response(\\n          JSON.stringify({ error: searchData.error?.message || 'Spotify search failed' }),\\n          { status: searchRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }\\n        );\\n      }\\n\\n      const tracks = searchData.tracks.items.map((track) => ({\\n        id: track.id,\\n        title: track.name,\\n        artist: track.artists.map(a => a.name).join(', '),\\n        album_art: track.album.images?.[0]?.url || null,\\n        preview_url: track.preview_url || null,\\n        provider: 'spotify',\\n      }));\\n\\n      return new Response(JSON.stringify({ tracks }), {\\n        status: 200,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    // --- Get Artist Genres ---\\n    if (action === 'get_artist_genres') {\\n      const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\\n      const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\\n\\n      if (!clientId || !clientSecret) {\\n        return new Response(JSON.stringify({ genres: {} }), {\\n          status: 200, \\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' }\\n        });\\n      }\\n      \\n      if (!artists || !Array.isArray(artists) || artists.length === 0) {\\n        return new Response(JSON.stringify({ genres: {} }), {\\n          status: 200,\\n          headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n        });\\n      }\\n\\n      // 1. Get access token\\n      const authString = btoa(`${clientId}:${clientSecret}`);\\n      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {\\n        method: 'POST',\\n        headers: {\\n          Authorization: `Basic ${authString}`,\\n          'Content-Type': 'application/x-www-form-urlencoded',\\n        },\\n        body: 'grant_type=client_credentials',\\n      });\\n\\n      const tokenData = await tokenRes.json();\\n      if (!tokenRes.ok) {\\n        return new Response(JSON.stringify({ genres: {} }), {\\n           status: 200,\\n           headers: { ...corsHeaders, 'Content-Type': 'application/json' }\\n        });\\n      }\\n\\n      // 2. Search each artist to get their genres\\n      const genresByArtist = {};\\n      const targetArtists = [...new Set(artists)].slice(0, 5); // Deduplicate and limit\\n      \\n      for (const artistName of targetArtists) {\\n        try {\\n          const searchRes = await fetch(\\n            `https://api.spotify.com/v1/search?q=${encodeURIComponent('artist:' + artistName)}&type=artist&limit=1`,\\n            { headers: { Authorization: `Bearer ${tokenData.access_token}` } }\\n          );\\n          if (searchRes.ok) {\\n             const searchData = await searchRes.json();\\n             const foundArtist = searchData.artists?.items?.[0];\\n             if (foundArtist && foundArtist.genres?.length > 0) {\\n                 genresByArtist[artistName] = foundArtist.genres[0]; \\n             } else {\\n                 genresByArtist[artistName] = 'unknown';\\n             }\\n          }\\n        } catch (e) {}\\n      }\\n\\n      return new Response(JSON.stringify({ genres: genresByArtist }), {\\n        status: 200,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    // --- Default: Get Spotify Token ---\\n    const clientId = config.find(c => c.key === 'spotify_client_id')?.value;\\n    const clientSecret = config.find(c => c.key === 'spotify_client_secret')?.value;\\n\\n    if (!clientId || !clientSecret) {\\n      return new Response(JSON.stringify({ error: 'Spotify credentials not configured' }), {\\n        status: 400,\\n        headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n      });\\n    }\\n\\n    const authString = btoa(`${clientId}:${clientSecret}`);\\n    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {\\n      method: 'POST',\\n      headers: {\\n        Authorization: `Basic ${authString}`,\\n        'Content-Type': 'application/x-www-form-urlencoded',\\n      },\\n      body: 'grant_type=client_credentials',\\n    });\\n\\n    const tokenResult = await tokenResponse.json();\\n    if (!tokenResponse.ok) {\\n      throw new Error(tokenResult.error_description || 'Failed to get Spotify token');\\n    }\\n\\n    return new Response(JSON.stringify(tokenResult), {\\n      status: 200,\\n      headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n    });\\n  } catch (e) {\\n    return new Response(JSON.stringify({ error: String(e) }), {\\n      status: 500,\\n      headers: { ...corsHeaders, 'Content-Type': 'application/json' },\\n    });\\n  }\\n}\\n", "status": "active"}}	191.108.166.153	2026-02-22 17:01:18.565564+00	2026-02-22 17:01:18.565564+00
+09f519a2-678b-441f-a025-1536b44efa7e	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "ALTER TABLE jukebox_queue ADD COLUMN preview_url text;", "paramCount": 0, "rowsAffected": null}	191.108.166.153	2026-02-22 17:09:23.976667+00	2026-02-22 17:09:23.976667+00
+63c4951a-38a9-4bce-b321-75711459b3f7	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.144.169.142	2026-02-23 23:11:05.47361+00	2026-02-23 23:11:05.47361+00
+2c11004e-bd98-4a56-9e74-aeaba9cc1142	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.21.21.31	2026-02-24 18:06:05.472709+00	2026-02-24 18:06:05.472709+00
+43547669-ff70-40af-bbb2-b9c89ad2963b	admin@insforge.local	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "-- Create extension for UUID\\nCREATE EXTENSION IF NOT EXISTS \\"uuid-ossp\\";\\n\\n-- Plans\\nCREATE TABLE IF NOT EXISTS public.plans (\\n  id TEXT PRIMARY KEY,\\n  name TEXT NOT NULL,\\n  features JSONB NOT NULL DEFAULT '{}'::jsonb,\\n  price NUMERIC NOT NULL DEFAULT 0\\n);\\n\\nINSERT INTO public.plans (id, name, features", "paramCount": 0}	191.108.166.153	2026-02-24 18:45:28.234519+00	2026-02-24 18:45:28.234519+00
+68fc73d0-c316-495f-a788-2caf922b5cfb	admin@insforge.local	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "-- 1. Eliminar la política defectuosa que causa el bucle\\nDROP POLICY IF EXISTS \\"Super admin all profiles\\" ON public.user_profiles;\\n\\n-- 2. Crear una función administradora para leer la tabla ignorando el RLS temporalmente\\nCREATE OR REPLACE FUNCTION public.check_is_admin()\\nRETURNS BOOLEAN AS $$\\nDECLAR", "paramCount": 0}	191.108.166.153	2026-02-24 18:48:49.506117+00	2026-02-24 18:48:49.506117+00
+8288de54-0e9d-43a5-ab4e-55a071f95ae3	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.21.21.31	2026-02-24 19:03:46.141676+00	2026-02-24 19:03:46.141676+00
+9ae22921-2ca0-4f30-a2d0-6ce49afa8335	admin@insforge.local	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "ALTER TABLE public.user_profiles\\nADD COLUMN IF NOT EXISTS full_name TEXT,\\nADD COLUMN IF NOT EXISTS instagram_username TEXT;\\n\\nCREATE POLICY \\"Users update own profile\\" ON public.user_profiles FOR UPDATE USING (auth.uid() = id);\\n", "paramCount": 0}	191.108.166.153	2026-02-24 19:05:26.620209+00	2026-02-24 19:05:26.620209+00
+ed2fe494-8697-4cca-8164-97fc484f0f86	admin@insforge.local	GET_SECRET	SECRETS	{"key": "API_KEY"}	3.144.169.142	2026-02-24 19:19:51.465184+00	2026-02-24 19:19:51.465184+00
+3ed2135e-1414-4820-b93b-43596b6fd035	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';", "paramCount": 0, "rowsAffected": 9}	191.108.166.153	2026-02-24 19:27:53.02849+00	2026-02-24 19:27:53.02849+00
+7d059577-fd41-4d4f-a183-422e29f28260	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "\\n-- 1. Update plan features\\nUPDATE public.plans\\nSET features = '{\\"gallery\\": true, \\"playlist\\": true, \\"tv_mode\\": true, \\"white_label\\": true, \\"max_storage_gb\\": 10}'::jsonb,\\n    price = 100000\\nWHERE id = 'pro';\\n\\nUPDATE public.plans\\nSET features = '{\\"gallery\\": false, \\"playlist\\": true, \\"tv_mode\\": false, \\"w", "paramCount": 0}	191.108.166.153	2026-02-24 19:41:40.524545+00	2026-02-24 19:41:40.524545+00
+1b6f28e2-3058-41d2-b30b-cb1050a0456c	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "\\nALTER TABLE public.user_profiles\\nADD COLUMN IF NOT EXISTS custom_logo_url TEXT;\\n", "paramCount": 0, "rowsAffected": null}	191.108.166.153	2026-02-24 19:49:44.462607+00	2026-02-24 19:49:44.462607+00
+d0f6b5f2-a099-4377-b78b-db18782c1c80	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "\\n-- Insert trial_pro plan\\nINSERT INTO public.plans (id, name, features, price)\\nVALUES (\\n  'trial_pro',\\n  'Trial Pro (24h)',\\n  '{\\"gallery\\": true, \\"playlist\\": true, \\"tv_mode\\": true, \\"white_label\\": true, \\"max_storage_gb\\": 10, \\"is_trial\\": true, \\"trial_days\\": 1}'::jsonb,\\n  0\\n)\\nON CONFLICT (id) DO UPDATE\\n", "paramCount": 0}	191.108.166.153	2026-02-24 19:59:05.114027+00	2026-02-24 19:59:05.114027+00
+cc2abb06-c137-4174-9e4f-37b210914c4c	api-key	CREATE_FUNCTION	FUNCTIONS	{"name": "moderate-photo", "slug": "moderate-photo", "status": "active", "functionId": "6574dcf5-4c2a-4957-90ea-4f86e46ae6ad"}	191.108.166.153	2026-02-24 20:09:44.243557+00	2026-02-24 20:09:44.243557+00
+4505de57-9667-4146-9093-67d3e59972b7	admin@insforge.local	UPSERT_ENV_VAR	DEPLOYMENTS	{"key": "GEMINI_API_KEY"}	191.108.166.153	2026-02-24 20:13:04.092264+00	2026-02-24 20:13:04.092264+00
+c174e6f4-c4dd-4cf5-84da-83b075eb67a4	api-key	UPDATE_FUNCTION	FUNCTIONS	{"slug": "moderate-photo", "changes": {"code": "// Edge Function: moderate-photo\\n// Runs server-side. Gemini API key is read from InsForge admin_config table\\n// (key = 'gemini_api_key'), with fallback to Deno.env GEMINI_API_KEY.\\n// Accepts: { storagePath: string, insforgeUrl: string, anonKey: string }\\n// Returns: { suggestion: 'approve'|'reject', confidence: number, reason: string }\\n\\n/**\\n * Fetch the Gemini API key from admin_config table, fallback to env var.\\n */\\nasync function getGeminiKey(insforgeUrl, anonKey) {\\n  try {\\n    const url = `${insforgeUrl}/api/database/records/admin_config?select=value&key=eq.gemini_api_key&limit=1`\\n    const res = await fetch(url, {\\n      headers: { Authorization: `Bearer ${anonKey}` }\\n    })\\n    if (res.ok) {\\n      const rows = await res.json()\\n      const row = Array.isArray(rows) ? rows[0] : (rows?.data?.[0])\\n      if (row?.value) return row.value\\n    }\\n  } catch { /* fall through */ }\\n  // Fallback to Deno environment variable\\n  return Deno.env.get('GEMINI_API_KEY') ?? ''\\n}\\n\\nasync function downloadPhoto(insforgeUrl, anonKey, storagePath) {\\n  const url = `${insforgeUrl}/api/storage/buckets/photos/objects/${encodeURIComponent(storagePath)}`\\n  const res = await fetch(url, {\\n    headers: { Authorization: `Bearer ${anonKey}` }\\n  })\\n  if (!res.ok) throw new Error(`Storage download failed: ${res.status}`)\\n  return res\\n}\\n\\nasync function analyzeWithGemini(base64, mimeType, apiKey) {\\n  if (!apiKey) throw new Error('Gemini API key not configured')\\n  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`\\n  const body = {\\n    contents: [{\\n      parts: [\\n        { inline_data: { mime_type: mimeType, data: base64 } },\\n        {\\n          text: `Analyze this photo for content moderation at an event.\\nRespond in JSON format only: {\\"suggestion\\": \\"approve\\" or \\"reject\\", \\"confidence\\": 0.0-1.0, \\"reason\\": \\"brief explanation\\"}\\nApprove photos that are appropriate for a public event (people, scenery, food, celebrations).\\nReject photos with explicit content, violence, hate symbols, or clearly inappropriate material.`\\n        }\\n      ]\\n    }]\\n  }\\n  const res = await fetch(url, {\\n    method: 'POST',\\n    headers: { 'Content-Type': 'application/json' },\\n    body: JSON.stringify(body)\\n  })\\n  if (!res.ok) {\\n    const errText = await res.text().catch(() => res.status.toString())\\n    throw new Error(`Gemini API error ${res.status}: ${errText}`)\\n  }\\n  const data = await res.json()\\n  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''\\n  const match = text.match(/\\\\{[\\\\s\\\\S]*\\\\}/)\\n  if (match) {\\n    const parsed = JSON.parse(match[0])\\n    return {\\n      suggestion: parsed.suggestion === 'reject' ? 'reject' : 'approve',\\n      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.8,\\n      reason: parsed.reason || 'Analysis completed'\\n    }\\n  }\\n  return { suggestion: 'approve', confidence: 0.7, reason: 'Analysis completed (fallback)' }\\n}\\n\\nmodule.exports = async function handler(request) {\\n  const CORS = {\\n    'Access-Control-Allow-Origin': '*',\\n    'Access-Control-Allow-Methods': 'POST, OPTIONS',\\n    'Access-Control-Allow-Headers': 'Content-Type, Authorization'\\n  }\\n\\n  if (request.method === 'OPTIONS') {\\n    return new Response(null, { headers: CORS })\\n  }\\n\\n  if (request.method !== 'POST') {\\n    return new Response(JSON.stringify({ error: 'Method not allowed' }), {\\n      status: 405, headers: { 'Content-Type': 'application/json', ...CORS }\\n    })\\n  }\\n\\n  try {\\n    const { storagePath, insforgeUrl, anonKey } = await request.json()\\n\\n    if (!storagePath || !insforgeUrl || !anonKey) {\\n      return new Response(JSON.stringify({ error: 'Missing required fields' }), {\\n        status: 400, headers: { 'Content-Type': 'application/json', ...CORS }\\n      })\\n    }\\n\\n    // 1. Resolve Gemini key (admin_config takes priority over env var)\\n    const apiKey = await getGeminiKey(insforgeUrl, anonKey)\\n    if (!apiKey) {\\n      return new Response(\\n        JSON.stringify({ suggestion: 'approve', confidence: 0.0, reason: 'Gemini API key no configurada — revisar panel admin' }),\\n        { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } }\\n      )\\n    }\\n\\n    // 2. Download photo from InsForge storage\\n    const photoRes = await downloadPhoto(insforgeUrl, anonKey, storagePath)\\n    const arrayBuffer = await photoRes.arrayBuffer()\\n    const uint8 = new Uint8Array(arrayBuffer)\\n    let binary = ''\\n    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i])\\n    const base64 = btoa(binary)\\n    const mimeType = photoRes.headers.get('content-type') || 'image/jpeg'\\n\\n    // 3. Analyze with Gemini\\n    const result = await analyzeWithGemini(base64, mimeType, apiKey)\\n\\n    return new Response(JSON.stringify(result), {\\n      status: 200, headers: { 'Content-Type': 'application/json', ...CORS }\\n    })\\n  } catch (err) {\\n    console.error('[moderate-photo]', err?.message ?? err)\\n    return new Response(\\n      JSON.stringify({\\n        suggestion: 'approve',\\n        confidence: 0.0,\\n        reason: `Error en análisis: ${err?.message ?? 'desconocido'} — revisar manualmente`\\n      }),\\n      { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } }\\n    )\\n  }\\n}\\n", "status": "active", "description": "Server-side Gemini photo moderation. Reads API key from admin_config table (so admins can update it from the dashboard). Returns suggestion/confidence/reason JSON."}}	191.108.166.153	2026-02-24 20:27:28.149591+00	2026-02-24 20:27:28.149591+00
+aaf2c787-6526-4059-a8de-767831c8ab31	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "ALTER TABLE public.moderation_queues ADD COLUMN error_message text;", "paramCount": 0, "rowsAffected": null}	191.108.166.153	2026-02-24 20:38:43.995049+00	2026-02-24 20:38:43.995049+00
+87c0c095-70ae-4b07-ae55-a455b851cec6	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT id, error_message FROM public.moderation_queues WHERE processed = false LIMIT 5;", "paramCount": 0, "rowsAffected": 4}	191.108.166.153	2026-02-24 20:47:00.060092+00	2026-02-24 20:47:00.060092+00
+94c4d260-d53e-42b1-85e4-a54c69aff1e3	api-key	CREATE_DEPLOYMENT	DEPLOYMENTS	{"id": "dda62875-d0f7-4019-889a-6fdd6a960f14"}	191.108.166.153	2026-02-24 21:06:10.406927+00	2026-02-24 21:06:10.406927+00
+27988c5f-2c65-4a61-b28f-ec26678351c9	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT id, status, url, created_at FROM system.deployments ORDER BY created_at DESC LIMIT 5;", "paramCount": 0, "rowsAffected": 3}	191.108.166.153	2026-02-24 21:06:27.655071+00	2026-02-24 21:06:27.655071+00
+42acfae6-9ff0-4954-a023-e7226827a0c2	api-key	CREATE_DEPLOYMENT	DEPLOYMENTS	{"id": "38476e78-f545-4638-bc04-18b5cd358d5f"}	191.108.166.153	2026-02-24 21:07:10.557837+00	2026-02-24 21:07:10.557837+00
+921ff857-a919-48a7-96ca-f208a20eb756	api-key	START_DEPLOYMENT	DEPLOYMENTS	{"id": "38476e78-f545-4638-bc04-18b5cd358d5f", "status": "INITIALIZING", "provider": "vercel", "providerDeploymentId": "dpl_2Xt7ss8daAazudg253g15xi7Ky4a"}	191.108.166.153	2026-02-24 21:07:15.556864+00	2026-02-24 21:07:15.556864+00
+c99f760b-bb96-406c-b1a4-eb3381f256fc	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT status, url FROM system.deployments WHERE id = '38476e78-f545-4638-bc04-18b5cd358d5f';", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-24 21:07:32.688106+00	2026-02-24 21:07:32.688106+00
+20562e12-bd3d-4682-a3fe-124fb086460e	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT status, url FROM system.deployments WHERE id = '38476e78-f545-4638-bc04-18b5cd358d5f';", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-24 21:08:00.577379+00	2026-02-24 21:08:00.577379+00
+0b395028-01bb-4e54-86fb-d357cbcb6617	api-key	EXECUTE_RAW_SQL	DATABASE	{"mode": "strict", "query": "SELECT status, url FROM system.deployments WHERE id = '38476e78-f545-4638-bc04-18b5cd358d5f';", "paramCount": 0, "rowsAffected": 1}	191.108.166.153	2026-02-24 21:08:26.869726+00	2026-02-24 21:08:26.869726+00
+\.
+
+
+--
+-- Data for Name: deployments; Type: TABLE DATA; Schema: system; Owner: postgres
+--
+
+COPY system.deployments (id, provider, provider_deployment_id, status, url, metadata, created_at, updated_at) FROM stdin;
+15c8c0cd-d41f-4a41-adcc-c2c19b329f48	vercel	dpl_CGD9F21vLVfJqtLWjCx6oxbFvRb5	READY	https://rrqj7kq5.insforge.site	{"target": "production", "fileCount": 71, "projectId": "prj_Q5luHuvG1R6mFvLRJ7oUavTZKhl4", "startedAt": "2026-02-22T16:08:32.735Z", "envVarKeys": ["VITE_INSFORGE_URL", "VITE_INSFORGE_ANON_KEY", "VITE_GEMINI_API_KEY", "VITE_YOUTUBE_API_KEY"], "vercelName": "deployment", "lastWebhookAt": "2026-02-22T16:09:30.379Z", "webhookEventId": "kYUbhDNKIAfTCJx8xOd_7", "webhookEventType": "deployment.succeeded"}	2026-02-22 16:08:27.066345+00	2026-02-22 16:09:30.380519+00
+1e91a066-a272-48aa-aa3b-3be9ee934113	vercel	dpl_F4AuvxXPHJP1YLsLng5Xyh9njFGx	READY	https://rrqj7kq5.insforge.site	{"target": "production", "fileCount": 71, "projectId": "prj_Q5luHuvG1R6mFvLRJ7oUavTZKhl4", "startedAt": "2026-02-22T16:12:21.674Z", "envVarKeys": ["VITE_INSFORGE_URL", "VITE_INSFORGE_ANON_KEY", "VITE_GEMINI_API_KEY", "VITE_YOUTUBE_API_KEY"], "vercelName": "deployment", "lastWebhookAt": "2026-02-22T16:13:20.042Z", "webhookEventId": "EJcNveUOy7GGZQXzw_vsY", "webhookEventType": "deployment.succeeded"}	2026-02-22 16:12:17.519019+00	2026-02-22 16:13:20.04304+00
+dda62875-d0f7-4019-889a-6fdd6a960f14	vercel	\N	UPLOADING	\N	\N	2026-02-24 21:06:10.344878+00	2026-02-24 21:06:12.794546+00
+38476e78-f545-4638-bc04-18b5cd358d5f	vercel	dpl_2Xt7ss8daAazudg253g15xi7Ky4a	READY	https://rrqj7kq5.insforge.site	{"target": "production", "fileCount": 81, "projectId": "prj_Q5luHuvG1R6mFvLRJ7oUavTZKhl4", "startedAt": "2026-02-24T21:07:15.452Z", "envVarKeys": ["VITE_SPOTIFY_CLIENT_SECRET", "VITE_SPOTIFY_CLIENT_ID", "GEMINI_API_KEY", "VITE_INSFORGE_URL", "VITE_INSFORGE_ANON_KEY", "VITE_GEMINI_API_KEY", "VITE_YOUTUBE_API_KEY"], "vercelName": "deployment", "lastWebhookAt": "2026-02-24T21:08:10.775Z", "webhookEventId": "Ydo0utS8e4fFo5p5E4GDY", "webhookEventType": "deployment.succeeded"}	2026-02-24 21:07:10.536265+00	2026-02-24 21:08:10.77622+00
+\.
+
+
+--
+-- Data for Name: mcp_usage; Type: TABLE DATA; Schema: system; Owner: postgres
+--
+
+COPY system.mcp_usage (id, tool_name, success, created_at) FROM stdin;
+3f868892-f7ec-424b-b45f-f5ac7e54a722	get-backend-metadata	t	2026-02-22 16:06:11.687023+00
+01836e1a-eb0b-4fce-b8c4-75b8ab1e6be8	run-raw-sql	t	2026-02-22 16:06:18.353943+00
+60816bed-4dff-4db9-b2fd-f0bfc9cd5543	run-raw-sql	t	2026-02-22 16:06:29.262958+00
+e36d9cce-b7e8-44c9-8ce8-d99d64a9e418	list-buckets	t	2026-02-22 16:06:43.919482+00
+08d99806-b3fa-4733-bf40-cfd9b5b5953f	fetch-docs	t	2026-02-22 16:06:56.158957+00
+31b7286e-daa0-4879-9d03-0350f9867812	run-raw-sql	t	2026-02-22 16:07:42.642368+00
+9c4f2390-5abe-4639-b3ec-68e1a16c85a0	create-bucket	t	2026-02-22 16:07:49.459945+00
+07f5d10a-58c6-4678-8948-230116fc4812	run-raw-sql	t	2026-02-22 16:08:00.498302+00
+e93fb40c-2458-4eee-b349-f0f67ea85381	create-deployment	t	2026-02-22 16:08:32.909108+00
+b6593ebc-fc36-405e-89c6-0be980a44755	run-raw-sql	t	2026-02-22 16:09:02.393969+00
+af59c682-0ab6-4b10-99fa-341ed8b2be0e	run-raw-sql	t	2026-02-22 16:09:45.161642+00
+5ece1cc2-40f4-4be3-9136-5793b5c85189	get-anon-key	t	2026-02-22 16:11:49.273397+00
+689a5b50-1443-417b-b48b-e58c56ddd977	create-deployment	t	2026-02-22 16:12:21.804124+00
+2036b330-6d93-45f9-8d22-abd28a6faa23	run-raw-sql	t	2026-02-22 16:12:38.929625+00
+4b956b98-dd86-453c-9eb0-b983196b48df	run-raw-sql	t	2026-02-22 16:13:42.648766+00
+384b7357-6b2e-4979-bce2-df19988bcc6d	fetch-docs	t	2026-02-22 16:39:35.237083+00
+fa8892d7-7342-4e6c-85a9-18aacf1f843f	create-function	t	2026-02-22 16:40:50.869333+00
+7478ad5a-9f79-410b-971f-15c9f6e4f634	get-function	t	2026-02-22 16:45:34.013709+00
+971f96bf-5e61-4fd6-a96a-c89b18dc333d	get-container-logs	t	2026-02-22 16:45:46.345863+00
+330a9e1d-b6eb-48b0-95be-e96172900800	get-container-logs	t	2026-02-22 16:45:48.647432+00
+3d942277-3856-4e23-9027-efaf063d681d	get-container-logs	t	2026-02-22 16:46:40.031393+00
+a0ad00c2-2c13-45b0-86dd-9ac3bec926a9	run-raw-sql	t	2026-02-22 16:47:16.614453+00
+7d3b50ff-4e72-4feb-968a-6cba7b625ea6	get-table-schema	t	2026-02-22 16:47:23.44008+00
+96da91eb-5d9a-4e58-861d-42c6f19b9c35	fetch-sdk-docs	t	2026-02-22 16:48:16.030077+00
+ffa39be6-e8e4-4181-be62-cf9e021faf50	update-function	t	2026-02-22 16:48:58.590448+00
+78c3b13a-b0bb-4276-880a-cd0a1f2ba244	update-function	t	2026-02-22 17:01:18.68752+00
+2d9a4003-7491-43e7-b22e-fc42e4b925b3	get-table-schema	t	2026-02-22 17:09:02.307796+00
+bdc9a701-ebda-47d1-a638-7ec29e197c9d	run-raw-sql	t	2026-02-22 17:09:24.525052+00
+81d117ed-812e-431b-9624-9c40511c404e	run-raw-sql	t	2026-02-24 19:27:53.148877+00
+9d9c3ab9-ea2d-4a53-a7fd-33e0837ec20e	get-backend-metadata	t	2026-02-24 19:35:02.732475+00
+a1b8ee49-4eb2-441a-b86c-71859cfa03c4	run-raw-sql	t	2026-02-24 19:41:40.667078+00
+fec30c06-59ee-48f0-bdbb-9434e5650925	run-raw-sql	t	2026-02-24 19:49:44.600152+00
+d5969911-18fe-4b8b-ba60-cbe3c9c9f3df	run-raw-sql	t	2026-02-24 19:59:05.362115+00
+f6e8b2da-7ff2-4604-835e-763fcc947ee6	get-table-schema	t	2026-02-24 20:06:35.081282+00
+d3c6b9bb-7f3f-4f73-b3bc-a0371fdff2ca	get-table-schema	t	2026-02-24 20:06:35.332463+00
+9415b235-a202-4571-b34f-68efd7ed7fb0	create-function	t	2026-02-24 20:09:44.549443+00
+02918e6f-554b-4b5d-aa04-a31c1c0085cf	get-function	t	2026-02-24 20:11:03.722806+00
+6b7c768f-f2c9-4a56-9591-bb2f3d70f4b2	update-function	t	2026-02-24 20:27:28.271444+00
+44ce2c33-a55a-44ec-a1ca-5271a07ca670	fetch-docs	t	2026-02-24 20:32:49.299933+00
+09a0b807-bd43-404e-b9ac-a8e1c6e1ac90	get-table-schema	t	2026-02-24 20:38:24.195756+00
+9108ecad-5df7-43ff-af6a-a9de68e26ffe	run-raw-sql	t	2026-02-24 20:38:44.127489+00
+4dd02777-0b18-4036-8a83-6f205e2db3ed	run-raw-sql	t	2026-02-24 20:47:00.635303+00
+1dd609f9-0469-4207-b386-3285d48b50f4	fetch-docs	t	2026-02-24 21:03:07.482271+00
+c0353f3b-dcb0-4c59-992c-0cfc2cd4cc51	create-deployment	t	2026-02-24 21:06:15.07373+00
+aa7fbc75-3fd1-4c8d-af7c-ec0a4471f0f7	run-raw-sql	t	2026-02-24 21:06:27.766963+00
+a4a1ce72-08ed-4ff2-9d62-e65e8b610624	create-deployment	t	2026-02-24 21:07:16.150603+00
+59b9c4df-6348-43e9-9c0c-93997191416b	run-raw-sql	t	2026-02-24 21:07:32.814677+00
+639a5b55-fcba-4c1f-bf4b-2c631c85c677	run-raw-sql	t	2026-02-24 21:08:00.69744+00
+cdd2fde5-aa3b-4aaa-9191-8a51e33a856c	run-raw-sql	t	2026-02-24 21:08:26.993837+00
+\.
+
+
+--
+-- Data for Name: migrations; Type: TABLE DATA; Schema: system; Owner: postgres
+--
+
+COPY system.migrations (id, name, run_on) FROM stdin;
+1	000_create-base-tables	2026-02-22 12:08:09.518276
+2	001_create-helper-functions	2026-02-22 12:08:09.518276
+3	002_rename-auth-tables	2026-02-22 12:08:09.518276
+4	003_create-users-table	2026-02-22 12:08:09.518276
+5	004_add-reload-postgrest-func	2026-02-22 12:08:09.518276
+6	005_enable-project-admin-modify-users	2026-02-22 12:08:09.518276
+7	006_modify-ai-usage-table	2026-02-22 12:08:09.518276
+8	007_drop-metadata-table	2026-02-22 12:08:09.518276
+9	008_add-system-tables	2026-02-22 12:08:09.518276
+10	009_add-function-secrets	2026-02-22 12:08:09.518276
+11	010_modify-ai-config-modalities	2026-02-22 12:08:09.518276
+12	011_refactor-secrets-table	2026-02-22 12:08:09.518276
+13	012_add-storage-uploaded-by	2026-02-22 12:08:09.518276
+14	013_create-auth-schema-functions	2026-02-22 12:08:09.518276
+15	014_add-updated-at-trigger-user-table	2026-02-22 12:08:09.518276
+16	015_create-auth-config-and-email-otp-tables	2026-02-22 12:08:09.518276
+17	016_update-auth-config-and-email-otp	2026-02-22 12:08:09.518276
+18	017_create-realtime-schema	2026-02-22 12:08:09.518276
+19	018_schema-rework	2026-02-22 12:08:09.518276
+20	019_create-deployments-table	2026-02-22 12:08:09.518276
+21	020_add-audio-modality	2026-02-22 12:08:09.518276
+22	021_create-schedules-schema	2026-02-22 12:08:09.518276
+23	022_create-function-deployments	2026-02-22 12:08:09.518276
+\.
+
+
+--
+-- Data for Name: secrets; Type: TABLE DATA; Schema: system; Owner: postgres
+--
+
+COPY system.secrets (id, key, value_ciphertext, is_active, last_used_at, expires_at, created_at, updated_at, is_reserved) FROM stdin;
+9de6ee4b-93a0-4e0b-864a-96012ab98d96	VERCEL_WEBHOOK_SECRET	09dd79eb0ab4a75b7a6cc41c5fb683f3:7a945ebd64e8d80f10aebbfcc0adb8c9:65df56bae408c0b2418b5286f768c8017b523e2102975d2a	t	2026-02-24 21:08:10.737064+00	\N	2026-02-22 16:08:29.401793+00	2026-02-24 21:08:10.737064+00	t
+631d5b12-074e-4eaa-93ae-261e03b41466	API_KEY	1749cb7fed33d4aede654f09ff6ef1dc:07c90fe902de8dfd2e1d5b4f46b3b8f1:ad0cbca1977a7992a4ce6526d9a6a8bae5d4eebb7f21ad23394aeb4f0f36fe05734938	t	2026-02-24 21:08:26.991241+00	\N	2026-02-22 12:08:19.61239+00	2026-02-24 21:08:26.991241+00	t
+3dd11c60-d8ff-4dfd-92de-b37de75024d5	SPOTIFY_CLIENT_SECRET	16f4716b3fe84c5272e0fbe13ea9848a:3dbac027bd52891acf472040d466e1bd:fd8cec37551ad88cb0afc7237fce27be5142063703f92b761bd08e84a3e579a6	t	2026-02-24 20:27:30.147447+00	\N	2026-02-22 16:44:30.662728+00	2026-02-24 20:27:30.147447+00	f
+99ac4266-f407-4760-ad21-2194f7b8acc9	SPOTIFY_CLIENT_ID	fa575f3892a217df05c45a0d20e398bd:3d16620b5c08670a7e1daa82fae590a5:c6daf6c0e718b4e41e42561249fe078fa7284eef6727cd8def189100a76d287c	t	2026-02-24 20:27:30.149667+00	\N	2026-02-22 16:44:16.13427+00	2026-02-24 20:27:30.149667+00	f
+3a1050d1-a0fa-47fe-ad31-11e9cb742d1f	INSFORGE_BASE_URL	8f498462a74b01b5e3ec6db9e2accdf5:f49718f8e2bdfe5651caa70806bf75ff:7f6c52ccb6abf57afb120c155379513028a69edd97da3a35cf0d0ce8516a7245e5d1acd38d	t	2026-02-24 20:27:30.153949+00	\N	2026-02-22 12:08:20.053455+00	2026-02-24 20:27:30.153949+00	t
+e561245b-6e3a-4526-a257-e915d7a96291	ANON_KEY	bd8d9ebc81d3258cd35e0d0d5500f979:d677cc255b4bd6c62907cb01251c2528:7c16486f883db00ef526b88f148c403d2d7c239997a751935b94c9f0a6b76fbefb67b28989455abe2eadd40c31a18d07b1b12fa00156fae1cce991fb5abb7e8323c7649457e1873184cbf660b7afedf3a7b047812ec90b535254cc6e829b6dd115bb46a6b6c96435f5dbd3a69ac75cb66469cd92909cc5c60821861169a434e6fdd3109df0a9aef030630d84b029bbe5f971c5751612913708289fd28850526008190a8ce22804b3d04af8a8488a2092bd60e6e1ebb87e14d0856f48be3b395b77f1a0a4df2035c04480b3bf0bab1327396461ebd5a219107234e8cb5d	t	2026-02-24 20:27:30.155808+00	\N	2026-02-22 12:08:20.048369+00	2026-02-24 20:27:30.155808+00	t
+f557c7ff-bf28-4d30-ab2f-96b70d7dd38d	INSFORGE_INTERNAL_URL	3d29e424f108609c64e14ce76ff5032c:f32898485c14ef2a0766baf47d8d0953:3209717102442cccb3c5b6d49d7c32ffe2193a09	t	2026-02-24 20:27:30.157931+00	\N	2026-02-22 12:08:20.029052+00	2026-02-24 20:27:30.157931+00	t
+\.
+
+
+--
+-- Name: jobid_seq; Type: SEQUENCE SET; Schema: cron; Owner: postgres
+--
+
+SELECT pg_catalog.setval('cron.jobid_seq', 1, false);
+
+
+--
+-- Name: runid_seq; Type: SEQUENCE SET; Schema: cron; Owner: postgres
+--
+
+SELECT pg_catalog.setval('cron.runid_seq', 1, false);
+
+
+--
+-- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: system; Owner: postgres
+--
+
+SELECT pg_catalog.setval('system.migrations_id_seq', 23, true);
+
+
+--
+-- Name: configs _ai_configs_model_id_key; Type: CONSTRAINT; Schema: ai; Owner: postgres
+--
+
+ALTER TABLE ONLY ai.configs
+    ADD CONSTRAINT _ai_configs_model_id_key UNIQUE (model_id);
+
+
+--
+-- Name: configs _ai_configs_pkey; Type: CONSTRAINT; Schema: ai; Owner: postgres
+--
+
+ALTER TABLE ONLY ai.configs
+    ADD CONSTRAINT _ai_configs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usage _ai_usage_pkey; Type: CONSTRAINT; Schema: ai; Owner: postgres
+--
+
+ALTER TABLE ONLY ai.usage
+    ADD CONSTRAINT _ai_usage_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_providers _account_pkey; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.user_providers
+    ADD CONSTRAINT _account_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_providers _account_provider_provider_account_id_key; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.user_providers
+    ADD CONSTRAINT _account_provider_provider_account_id_key UNIQUE (provider, provider_account_id);
+
+
+--
+-- Name: configs _auth_configs_pkey; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.configs
+    ADD CONSTRAINT _auth_configs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_otps _email_otps_email_purpose_key; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.email_otps
+    ADD CONSTRAINT _email_otps_email_purpose_key UNIQUE (email, purpose);
+
+
+--
+-- Name: email_otps _email_otps_pkey; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.email_otps
+    ADD CONSTRAINT _email_otps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_configs _oauth_configs_pkey; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.oauth_configs
+    ADD CONSTRAINT _oauth_configs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_configs _oauth_configs_provider_key; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.oauth_configs
+    ADD CONSTRAINT _oauth_configs_provider_key UNIQUE (provider);
+
+
+--
+-- Name: users _user_email_key; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.users
+    ADD CONSTRAINT _user_email_key UNIQUE (email);
+
+
+--
+-- Name: users _user_pkey; Type: CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.users
+    ADD CONSTRAINT _user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: definitions _edge_functions_pkey; Type: CONSTRAINT; Schema: functions; Owner: postgres
+--
+
+ALTER TABLE ONLY functions.definitions
+    ADD CONSTRAINT _edge_functions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: definitions _edge_functions_slug_key; Type: CONSTRAINT; Schema: functions; Owner: postgres
+--
+
+ALTER TABLE ONLY functions.definitions
+    ADD CONSTRAINT _edge_functions_slug_key UNIQUE (slug);
+
+
+--
+-- Name: deployments deployments_pkey; Type: CONSTRAINT; Schema: functions; Owner: postgres
+--
+
+ALTER TABLE ONLY functions.deployments
+    ADD CONSTRAINT deployments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: admin_config admin_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.admin_config
+    ADD CONSTRAINT admin_config_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: events events_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_code_key UNIQUE (code);
+
+
+--
+-- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jukebox_queue jukebox_queue_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jukebox_queue
+    ADD CONSTRAINT jukebox_queue_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jukebox_settings jukebox_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jukebox_settings
+    ADD CONSTRAINT jukebox_settings_pkey PRIMARY KEY (event_id);
+
+
+--
+-- Name: moderation_actions moderation_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.moderation_actions
+    ADD CONSTRAINT moderation_actions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: moderation_queues moderation_queues_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.moderation_queues
+    ADD CONSTRAINT moderation_queues_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: photos photos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.photos
+    ADD CONSTRAINT photos_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plans
+    ADD CONSTRAINT plans_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_profiles user_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_subscriptions user_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_subscriptions
+    ADD CONSTRAINT user_subscriptions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: channels channels_pattern_key; Type: CONSTRAINT; Schema: realtime; Owner: postgres
+--
+
+ALTER TABLE ONLY realtime.channels
+    ADD CONSTRAINT channels_pattern_key UNIQUE (pattern);
+
+
+--
+-- Name: channels channels_pkey; Type: CONSTRAINT; Schema: realtime; Owner: postgres
+--
+
+ALTER TABLE ONLY realtime.channels
+    ADD CONSTRAINT channels_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: messages messages_pkey; Type: CONSTRAINT; Schema: realtime; Owner: postgres
+--
+
+ALTER TABLE ONLY realtime.messages
+    ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: job_logs job_logs_pkey; Type: CONSTRAINT; Schema: schedules; Owner: postgres
+--
+
+ALTER TABLE ONLY schedules.job_logs
+    ADD CONSTRAINT job_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: schedules; Owner: postgres
+--
+
+ALTER TABLE ONLY schedules.jobs
+    ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: buckets _storage_buckets_pkey; Type: CONSTRAINT; Schema: storage; Owner: postgres
+--
+
+ALTER TABLE ONLY storage.buckets
+    ADD CONSTRAINT _storage_buckets_pkey PRIMARY KEY (name);
+
+
+--
+-- Name: objects _storage_pkey; Type: CONSTRAINT; Schema: storage; Owner: postgres
+--
+
+ALTER TABLE ONLY storage.objects
+    ADD CONSTRAINT _storage_pkey PRIMARY KEY (bucket, key);
+
+
+--
+-- Name: audit_logs _audit_logs_pkey; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.audit_logs
+    ADD CONSTRAINT _audit_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mcp_usage _mcp_usage_pkey; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.mcp_usage
+    ADD CONSTRAINT _mcp_usage_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: secrets _secrets_name_key; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.secrets
+    ADD CONSTRAINT _secrets_name_key UNIQUE (key);
+
+
+--
+-- Name: secrets _secrets_pkey; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.secrets
+    ADD CONSTRAINT _secrets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deployments deployments_pkey; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.deployments
+    ADD CONSTRAINT deployments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deployments deployments_provider_deployment_id_key; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.deployments
+    ADD CONSTRAINT deployments_provider_deployment_id_key UNIQUE (provider_deployment_id);
+
+
+--
+-- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: system; Owner: postgres
+--
+
+ALTER TABLE ONLY system.migrations
+    ADD CONSTRAINT migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_ai_configs_input_modality; Type: INDEX; Schema: ai; Owner: postgres
+--
+
+CREATE INDEX idx_ai_configs_input_modality ON ai.configs USING gin (input_modality);
+
+
+--
+-- Name: idx_ai_configs_output_modality; Type: INDEX; Schema: ai; Owner: postgres
+--
+
+CREATE INDEX idx_ai_configs_output_modality ON ai.configs USING gin (output_modality);
+
+
+--
+-- Name: idx_ai_usage_config_id; Type: INDEX; Schema: ai; Owner: postgres
+--
+
+CREATE INDEX idx_ai_usage_config_id ON ai.usage USING btree (config_id);
+
+
+--
+-- Name: idx_ai_usage_created_at; Type: INDEX; Schema: ai; Owner: postgres
+--
+
+CREATE INDEX idx_ai_usage_created_at ON ai.usage USING btree (created_at DESC);
+
+
+--
+-- Name: idx_ai_usage_model_id; Type: INDEX; Schema: ai; Owner: postgres
+--
+
+CREATE INDEX idx_ai_usage_model_id ON ai.usage USING btree (model_id);
+
+
+--
+-- Name: idx_auth_configs_singleton; Type: INDEX; Schema: auth; Owner: postgres
+--
+
+CREATE UNIQUE INDEX idx_auth_configs_singleton ON auth.configs USING btree ((1));
+
+
+--
+-- Name: idx_email_otps_email_purpose; Type: INDEX; Schema: auth; Owner: postgres
+--
+
+CREATE INDEX idx_email_otps_email_purpose ON auth.email_otps USING btree (email, purpose);
+
+
+--
+-- Name: idx_email_otps_expires_at; Type: INDEX; Schema: auth; Owner: postgres
+--
+
+CREATE INDEX idx_email_otps_expires_at ON auth.email_otps USING btree (expires_at);
+
+
+--
+-- Name: idx_email_otps_otp_hash; Type: INDEX; Schema: auth; Owner: postgres
+--
+
+CREATE INDEX idx_email_otps_otp_hash ON auth.email_otps USING btree (otp_hash);
+
+
+--
+-- Name: idx_oauth_configs_provider; Type: INDEX; Schema: auth; Owner: postgres
+--
+
+CREATE INDEX idx_oauth_configs_provider ON auth.oauth_configs USING btree (provider);
+
+
+--
+-- Name: idx_function_deployments_created; Type: INDEX; Schema: functions; Owner: postgres
+--
+
+CREATE INDEX idx_function_deployments_created ON functions.deployments USING btree (created_at DESC);
+
+
+--
+-- Name: idx_function_deployments_status; Type: INDEX; Schema: functions; Owner: postgres
+--
+
+CREATE INDEX idx_function_deployments_status ON functions.deployments USING btree (status);
+
+
+--
+-- Name: idx_realtime_channels_enabled; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_channels_enabled ON realtime.channels USING btree (enabled);
+
+
+--
+-- Name: idx_realtime_channels_pattern; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_channels_pattern ON realtime.channels USING btree (pattern);
+
+
+--
+-- Name: idx_realtime_messages_channel_id; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_messages_channel_id ON realtime.messages USING btree (channel_id);
+
+
+--
+-- Name: idx_realtime_messages_channel_name; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_messages_channel_name ON realtime.messages USING btree (channel_name);
+
+
+--
+-- Name: idx_realtime_messages_created_at; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_messages_created_at ON realtime.messages USING btree (created_at DESC);
+
+
+--
+-- Name: idx_realtime_messages_event_name; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_messages_event_name ON realtime.messages USING btree (event_name);
+
+
+--
+-- Name: idx_realtime_messages_sender; Type: INDEX; Schema: realtime; Owner: postgres
+--
+
+CREATE INDEX idx_realtime_messages_sender ON realtime.messages USING btree (sender_type, sender_id);
+
+
+--
+-- Name: idx_job_logs_executed_at; Type: INDEX; Schema: schedules; Owner: postgres
+--
+
+CREATE INDEX idx_job_logs_executed_at ON schedules.job_logs USING btree (executed_at DESC);
+
+
+--
+-- Name: idx_job_logs_job_id; Type: INDEX; Schema: schedules; Owner: postgres
+--
+
+CREATE INDEX idx_job_logs_job_id ON schedules.job_logs USING btree (job_id);
+
+
+--
+-- Name: idx_jobs_cron_job_id; Type: INDEX; Schema: schedules; Owner: postgres
+--
+
+CREATE INDEX idx_jobs_cron_job_id ON schedules.jobs USING btree (cron_job_id);
+
+
+--
+-- Name: idx_jobs_is_active; Type: INDEX; Schema: schedules; Owner: postgres
+--
+
+CREATE INDEX idx_jobs_is_active ON schedules.jobs USING btree (is_active);
+
+
+--
+-- Name: idx_storage_uploaded_by; Type: INDEX; Schema: storage; Owner: postgres
+--
+
+CREATE INDEX idx_storage_uploaded_by ON storage.objects USING btree (uploaded_by);
+
+
+--
+-- Name: idx_audit_logs_actor; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_audit_logs_actor ON system.audit_logs USING btree (actor);
+
+
+--
+-- Name: idx_audit_logs_created_at; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_audit_logs_created_at ON system.audit_logs USING btree (created_at DESC);
+
+
+--
+-- Name: idx_audit_logs_module; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_audit_logs_module ON system.audit_logs USING btree (module);
+
+
+--
+-- Name: idx_deployments_created_at; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_deployments_created_at ON system.deployments USING btree (created_at DESC);
+
+
+--
+-- Name: idx_deployments_provider; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_deployments_provider ON system.deployments USING btree (provider);
+
+
+--
+-- Name: idx_deployments_status; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_deployments_status ON system.deployments USING btree (status);
+
+
+--
+-- Name: idx_mcp_usage_created_at; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_mcp_usage_created_at ON system.mcp_usage USING btree (created_at DESC);
+
+
+--
+-- Name: idx_secrets_name; Type: INDEX; Schema: system; Owner: postgres
+--
+
+CREATE INDEX idx_secrets_name ON system.secrets USING btree (key);
+
+
+--
+-- Name: users on_auth_user_created; Type: TRIGGER; Schema: auth; Owner: postgres
+--
+
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+--
+-- Name: configs update_configs_updated_at; Type: TRIGGER; Schema: auth; Owner: postgres
+--
+
+CREATE TRIGGER update_configs_updated_at BEFORE UPDATE ON auth.configs FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: email_otps update_email_otps_updated_at; Type: TRIGGER; Schema: auth; Owner: postgres
+--
+
+CREATE TRIGGER update_email_otps_updated_at BEFORE UPDATE ON auth.email_otps FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: oauth_configs update_oauth_configs_updated_at; Type: TRIGGER; Schema: auth; Owner: postgres
+--
+
+CREATE TRIGGER update_oauth_configs_updated_at BEFORE UPDATE ON auth.oauth_configs FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: definitions update_definitions_updated_at; Type: TRIGGER; Schema: functions; Owner: postgres
+--
+
+CREATE TRIGGER update_definitions_updated_at BEFORE UPDATE ON functions.definitions FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: messages trg_message_notify; Type: TRIGGER; Schema: realtime; Owner: postgres
+--
+
+CREATE TRIGGER trg_message_notify AFTER INSERT ON realtime.messages FOR EACH ROW EXECUTE FUNCTION realtime.notify_on_message_insert();
+
+
+--
+-- Name: channels update_channels_updated_at; Type: TRIGGER; Schema: realtime; Owner: postgres
+--
+
+CREATE TRIGGER update_channels_updated_at BEFORE UPDATE ON realtime.channels FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: jobs trg_jobs_updated_at; Type: TRIGGER; Schema: schedules; Owner: postgres
+--
+
+CREATE TRIGGER trg_jobs_updated_at BEFORE UPDATE ON schedules.jobs FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: audit_logs update_audit_logs_updated_at; Type: TRIGGER; Schema: system; Owner: postgres
+--
+
+CREATE TRIGGER update_audit_logs_updated_at BEFORE UPDATE ON system.audit_logs FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: secrets update_secrets_updated_at; Type: TRIGGER; Schema: system; Owner: postgres
+--
+
+CREATE TRIGGER update_secrets_updated_at BEFORE UPDATE ON system.secrets FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: deployments update_system_deployments_updated_at; Type: TRIGGER; Schema: system; Owner: postgres
+--
+
+CREATE TRIGGER update_system_deployments_updated_at BEFORE UPDATE ON system.deployments FOR EACH ROW EXECUTE FUNCTION system.update_updated_at();
+
+
+--
+-- Name: usage usage_config_id_fkey; Type: FK CONSTRAINT; Schema: ai; Owner: postgres
+--
+
+ALTER TABLE ONLY ai.usage
+    ADD CONSTRAINT usage_config_id_fkey FOREIGN KEY (config_id) REFERENCES ai.configs(id);
+
+
+--
+-- Name: user_providers _account_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.user_providers
+    ADD CONSTRAINT _account_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_configs oauth_configs_secret_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.oauth_configs
+    ADD CONSTRAINT oauth_configs_secret_id_fkey FOREIGN KEY (secret_id) REFERENCES system.secrets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: user_providers user_providers_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE ONLY auth.user_providers
+    ADD CONSTRAINT user_providers_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: jukebox_queue jukebox_queue_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jukebox_queue
+    ADD CONSTRAINT jukebox_queue_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: jukebox_settings jukebox_settings_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jukebox_settings
+    ADD CONSTRAINT jukebox_settings_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: moderation_actions moderation_actions_photo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.moderation_actions
+    ADD CONSTRAINT moderation_actions_photo_id_fkey FOREIGN KEY (photo_id) REFERENCES public.photos(id) ON DELETE CASCADE;
+
+
+--
+-- Name: moderation_queues moderation_queues_photo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.moderation_queues
+    ADD CONSTRAINT moderation_queues_photo_id_fkey FOREIGN KEY (photo_id) REFERENCES public.photos(id) ON DELETE CASCADE;
+
+
+--
+-- Name: photos photos_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.photos
+    ADD CONSTRAINT photos_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_profiles user_profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_profiles user_profiles_plan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_profiles
+    ADD CONSTRAINT user_profiles_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id);
+
+
+--
+-- Name: user_subscriptions user_subscriptions_plan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_subscriptions
+    ADD CONSTRAINT user_subscriptions_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id);
+
+
+--
+-- Name: user_subscriptions user_subscriptions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_subscriptions
+    ADD CONSTRAINT user_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: messages messages_channel_id_fkey; Type: FK CONSTRAINT; Schema: realtime; Owner: postgres
+--
+
+ALTER TABLE ONLY realtime.messages
+    ADD CONSTRAINT messages_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES realtime.channels(id) ON DELETE SET NULL;
+
+
+--
+-- Name: job_logs job_logs_job_id_fkey; Type: FK CONSTRAINT; Schema: schedules; Owner: postgres
+--
+
+ALTER TABLE ONLY schedules.job_logs
+    ADD CONSTRAINT job_logs_job_id_fkey FOREIGN KEY (job_id) REFERENCES schedules.jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: objects objects_bucket_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: postgres
+--
+
+ALTER TABLE ONLY storage.objects
+    ADD CONSTRAINT objects_bucket_fkey FOREIGN KEY (bucket) REFERENCES storage.buckets(name) ON DELETE CASCADE;
+
+
+--
+-- Name: objects objects_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: postgres
+--
+
+ALTER TABLE ONLY storage.objects
+    ADD CONSTRAINT objects_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: users Public can view user profiles; Type: POLICY; Schema: auth; Owner: postgres
+--
+
+CREATE POLICY "Public can view user profiles" ON auth.users FOR SELECT USING (true);
+
+
+--
+-- Name: users Users can update own profile; Type: POLICY; Schema: auth; Owner: postgres
+--
+
+CREATE POLICY "Users can update own profile" ON auth.users FOR UPDATE USING ((id = auth.uid())) WITH CHECK ((id = auth.uid()));
+
+
+--
+-- Name: users project_admin_policy; Type: POLICY; Schema: auth; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON auth.users TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: users; Type: ROW SECURITY; Schema: auth; Owner: postgres
+--
+
+ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_subscriptions Admin all subscriptions; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Admin all subscriptions" ON public.user_subscriptions USING (public.check_is_admin());
+
+
+--
+-- Name: admin_config Public admin_config; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public admin_config" ON public.admin_config USING (true);
+
+
+--
+-- Name: events Public events access; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public events access" ON public.events USING (true);
+
+
+--
+-- Name: jukebox_queue Public jukebox queue; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public jukebox queue" ON public.jukebox_queue USING (true);
+
+
+--
+-- Name: jukebox_settings Public jukebox settings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public jukebox settings" ON public.jukebox_settings USING (true);
+
+
+--
+-- Name: moderation_actions Public moderation action; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public moderation action" ON public.moderation_actions USING (true);
+
+
+--
+-- Name: moderation_queues Public moderation queue; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public moderation queue" ON public.moderation_queues USING (true);
+
+
+--
+-- Name: photos Public photos access; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public photos access" ON public.photos USING (true);
+
+
+--
+-- Name: plans Public plans; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Public plans" ON public.plans FOR SELECT USING (true);
+
+
+--
+-- Name: user_profiles Super admin all profiles; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Super admin all profiles" ON public.user_profiles USING (public.check_is_admin());
+
+
+--
+-- Name: user_subscriptions Users read own subscription; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users read own subscription" ON public.user_subscriptions FOR SELECT USING ((auth.uid() = user_id));
+
+
+--
+-- Name: user_profiles Users update own profile; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users update own profile" ON public.user_profiles FOR UPDATE USING ((auth.uid() = id));
+
+
+--
+-- Name: user_profiles Users view own profile; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users view own profile" ON public.user_profiles FOR SELECT USING ((auth.uid() = id));
+
+
+--
+-- Name: admin_config; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.admin_config ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: events; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: jukebox_queue; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.jukebox_queue ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: jukebox_settings; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.jukebox_settings ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: moderation_actions; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.moderation_actions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: moderation_queues; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.moderation_queues ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: photos; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.photos ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: plans; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: admin_config project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.admin_config TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: events project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.events TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: jukebox_queue project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.jukebox_queue TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: jukebox_settings project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.jukebox_settings TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: moderation_actions project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.moderation_actions TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: moderation_queues project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.moderation_queues TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: photos project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.photos TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: plans project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.plans TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: user_profiles project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.user_profiles TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: user_subscriptions project_admin_policy; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY project_admin_policy ON public.user_subscriptions TO project_admin USING (true) WITH CHECK (true);
+
+
+--
+-- Name: user_profiles; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user_subscriptions; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: SCHEMA auth; Type: ACL; Schema: -; Owner: postgres
+--
+
+GRANT USAGE ON SCHEMA auth TO PUBLIC;
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
+--
+
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO project_admin;
+
+
+--
+-- Name: SCHEMA realtime; Type: ACL; Schema: -; Owner: postgres
+--
+
+GRANT USAGE ON SCHEMA realtime TO authenticated;
+GRANT USAGE ON SCHEMA realtime TO anon;
+
+
+--
+-- Name: FUNCTION channel_name(); Type: ACL; Schema: realtime; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION realtime.channel_name() TO authenticated;
+GRANT ALL ON FUNCTION realtime.channel_name() TO anon;
+
+
+--
+-- Name: FUNCTION publish(p_channel_name text, p_event_name text, p_payload jsonb); Type: ACL; Schema: realtime; Owner: postgres
+--
+
+REVOKE ALL ON FUNCTION realtime.publish(p_channel_name text, p_event_name text, p_payload jsonb) FROM PUBLIC;
+
+
+--
+-- Name: TABLE configs; Type: ACL; Schema: ai; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE ai.configs TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE ai.configs TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE ai.configs TO project_admin;
+
+
+--
+-- Name: TABLE usage; Type: ACL; Schema: ai; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE ai.usage TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE ai.usage TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE ai.usage TO project_admin;
+
+
+--
+-- Name: TABLE configs; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.configs TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.configs TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.configs TO project_admin;
+
+
+--
+-- Name: TABLE email_otps; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.email_otps TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.email_otps TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.email_otps TO project_admin;
+
+
+--
+-- Name: TABLE oauth_configs; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.oauth_configs TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.oauth_configs TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.oauth_configs TO project_admin;
+
+
+--
+-- Name: TABLE user_providers; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.user_providers TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.user_providers TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.user_providers TO project_admin;
+
+
+--
+-- Name: TABLE users; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.users TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.users TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.users TO project_admin;
+
+
+--
+-- Name: COLUMN users.id; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT(id) ON TABLE auth.users TO PUBLIC;
+
+
+--
+-- Name: COLUMN users.created_at; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT(created_at) ON TABLE auth.users TO PUBLIC;
+
+
+--
+-- Name: COLUMN users.profile; Type: ACL; Schema: auth; Owner: postgres
+--
+
+GRANT SELECT(profile),UPDATE(profile) ON TABLE auth.users TO PUBLIC;
+
+
+--
+-- Name: TABLE definitions; Type: ACL; Schema: functions; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE functions.definitions TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE functions.definitions TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE functions.definitions TO project_admin;
+
+
+--
+-- Name: TABLE admin_config; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.admin_config TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.admin_config TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.admin_config TO project_admin;
+
+
+--
+-- Name: TABLE events; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.events TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.events TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.events TO project_admin;
+
+
+--
+-- Name: TABLE jukebox_queue; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.jukebox_queue TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.jukebox_queue TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.jukebox_queue TO project_admin;
+
+
+--
+-- Name: TABLE jukebox_settings; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.jukebox_settings TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.jukebox_settings TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.jukebox_settings TO project_admin;
+
+
+--
+-- Name: TABLE moderation_actions; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.moderation_actions TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.moderation_actions TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.moderation_actions TO project_admin;
+
+
+--
+-- Name: TABLE moderation_queues; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.moderation_queues TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.moderation_queues TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.moderation_queues TO project_admin;
+
+
+--
+-- Name: TABLE photos; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.photos TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.photos TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.photos TO project_admin;
+
+
+--
+-- Name: TABLE plans; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.plans TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.plans TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.plans TO project_admin;
+
+
+--
+-- Name: TABLE user_profiles; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_profiles TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_profiles TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_profiles TO project_admin;
+
+
+--
+-- Name: TABLE user_subscriptions; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_subscriptions TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_subscriptions TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.user_subscriptions TO project_admin;
+
+
+--
+-- Name: TABLE channels; Type: ACL; Schema: realtime; Owner: postgres
+--
+
+GRANT SELECT ON TABLE realtime.channels TO authenticated;
+GRANT SELECT ON TABLE realtime.channels TO anon;
+
+
+--
+-- Name: TABLE messages; Type: ACL; Schema: realtime; Owner: postgres
+--
+
+GRANT INSERT ON TABLE realtime.messages TO authenticated;
+GRANT INSERT ON TABLE realtime.messages TO anon;
+
+
+--
+-- Name: TABLE buckets; Type: ACL; Schema: storage; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE storage.buckets TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE storage.buckets TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE storage.buckets TO project_admin;
+
+
+--
+-- Name: TABLE objects; Type: ACL; Schema: storage; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE storage.objects TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE storage.objects TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE storage.objects TO project_admin;
+
+
+--
+-- Name: TABLE audit_logs; Type: ACL; Schema: system; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.audit_logs TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.audit_logs TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.audit_logs TO project_admin;
+
+
+--
+-- Name: TABLE mcp_usage; Type: ACL; Schema: system; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.mcp_usage TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.mcp_usage TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.mcp_usage TO project_admin;
+
+
+--
+-- Name: TABLE secrets; Type: ACL; Schema: system; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.secrets TO anon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.secrets TO authenticated;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE system.secrets TO project_admin;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,DELETE,UPDATE ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,DELETE,UPDATE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,DELETE,UPDATE ON TABLES TO project_admin;
+
+
+--
+-- Name: create_policies_on_rls_enable; Type: EVENT TRIGGER; Schema: -; Owner: postgres
+--
+
+CREATE EVENT TRIGGER create_policies_on_rls_enable ON ddl_command_end
+         WHEN TAG IN ('ALTER TABLE')
+   EXECUTE FUNCTION system.create_policies_after_rls();
+
+
+ALTER EVENT TRIGGER create_policies_on_rls_enable OWNER TO postgres;
+
+--
+-- Name: create_policies_on_table_create; Type: EVENT TRIGGER; Schema: -; Owner: postgres
+--
+
+CREATE EVENT TRIGGER create_policies_on_table_create ON ddl_command_end
+         WHEN TAG IN ('CREATE TABLE')
+   EXECUTE FUNCTION system.create_default_policies();
+
+
+ALTER EVENT TRIGGER create_policies_on_table_create OWNER TO postgres;
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 9VzoIym3LgJN07wh8MmsJoVrlgm9iZpjhnfQPrcNRedJMc5s7H1XA2Y1im9qq1Y
+
